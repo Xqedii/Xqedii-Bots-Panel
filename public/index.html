@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xqedii Bots</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/x-icon" href="/icons/ico.ico">
+</head>
+<body>
+  <div class="loading">
+    <img src="icons/logowhite.png" class="logoanim">
+  </div>
+  <div class="layout-container">
+    <aside class="sidebar">
+        <div class="inner">
+            <div class="header">
+                <img src="icons/logo.png" class="logo" alt="logo" />
+                <h1>Xqedii Bots</h1>
+            </div>
+            <nav>
+                <div class="menu">
+                    <div class="menu-top">
+                        <button type="button" class="active" data-tab="attack">
+                            <span class="material-symbols-outlined">swords</span>
+                            <p>Attack</p>
+                        </button>
+                        <button type="button" data-tab="actions">
+                            <span class="material-symbols-outlined">list_alt</span>
+                            <p>Actions</p>
+                        </button>
+                        <button type="button" data-tab="nicks">
+                            <span class="material-symbols-outlined">badge</span>
+                            <p>Nicknames</p>
+                        </button>
+                        <button type="button" data-tab="proxy">
+                            <span class="material-symbols-outlined">lan</span>
+                            <p>Proxy</p>
+                        </button>
+                        <button type="button" data-tab="captcha">
+                            <span class="material-symbols-outlined">encrypted_add</span>
+                            <p>Captcha</p>
+                        </button>
+                        <button type="button" data-tab="listeners">
+                            <span class="material-symbols-outlined">api</span>
+                            <p>Listeners</p>
+                        </button>
+                        <button type="button" data-tab="killswitch">
+                            <span class="material-symbols-outlined">explosion</span>
+                            <p>Kill Switch</p>
+                        </button>
+                    </div>
+
+                    <div class="menu-bottom">
+                        <button type="button" id="settings-btn">
+                            <span class="material-symbols-outlined">settings</span>
+                            <p>Settings</p>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </aside>
+    
+    <main>
+        <div id="attack" class="tab-content active">
+            <div class="attack-top-row">
+                <div class="attack-form-container">
+                    <h2>Attack Configuration</h2>
+                    <p class="page-description">Configure and launch the attack.</p>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ip">Server IP</label>
+                            <input type="text" id="ip" placeholder="example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="amount">Amount</label>
+                            <input type="number" id="amount" placeholder="20" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="version">Version</label>
+                            <select id="version">
+                                <option value="1.18.2">1.18.2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="delay">Delay</label>
+                            <input type="number" id="delay" placeholder="4000" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="nicks-dropdown">Nicknames</label>
+                            <select id="nicks-dropdown">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="actions-dropdown">Actions</label>
+                            <select id="actions-dropdown">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <button id="start-btn" class="btn btn-primary">Start</button>
+                    </div>
+                </div>
+                <div class="console-container">
+                     <h2>Console</h2>
+                     <p class="page-description">Information from the process.</p>
+                     <div id="console" class="console-output">Waiting for connection to the server...</div>
+                     <button id="open-actions-modal-btn" class="btn btn-secondary" style="margin-top: 16px; width: 100%;">Quick Actions</button>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Bot Status</h2>
+                <p class="page-description">Informations about currently connected bots.</p>
+                <div class="chart-wrapper">
+                    <canvas id="bots-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="actions" class="tab-content">
+            <div class="content-wrapper">
+                <h2>Actions Manager</h2>
+                <p class="page-description">Create and manage action files.</p>
+                <button id="actions-add-new" class="btn btn-primary" style="grid-column: auto; margin-bottom: 24px;">Add new action list</button>
+                <div class="list-editor-container">
+                    <div class="item-list-container">
+                        <h3>Existing lists</h3>
+                        <ul id="actions-list" class="item-list"></ul>
+                    </div>
+                    <div id="actions-editor-container" class="item-editor-container hidden">
+                        <h3>Editor</h3>
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="actions-name">Actions name</label>
+                            <input type="text" id="actions-name" placeholder="Enter name">
+                        </div>
+                        <div class="form-group full-width">
+                             <label for="actions-content">Content (one action per line)</label>
+                            <textarea id="actions-content" class="editor-textarea"></textarea>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button id="actions-save" class="btn btn-primary" style="grid-column: auto;">Save</button>
+                            <button id="actions-cancel" class="btn btn-secondary" style="grid-column: auto;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="proxy" class="tab-content">
+            <div class="content-wrapper">
+                <h2>Proxy Manager</h2>
+                <p class="page-description">Create and manage proxy lists.</p>
+                <button id="proxy-add-new" class="btn btn-primary" style="grid-column: auto; margin-bottom: 24px;">Add new proxy list</button>
+                <div class="list-editor-container">
+                    <div class="item-list-container">
+                        <h3>Existing lists</h3>
+                        <ul id="proxy-list" class="item-list"></ul>
+                    </div>
+                    <div id="proxy-editor-container" class="item-editor-container hidden">
+                        <h3>Editor</h3>
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="proxy-name">Proxy list name</label>
+                            <input type="text" id="proxy-name" placeholder="Enter name">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="proxy-content">Content (one proxy per line, e.g., ip:port)</label>
+                            <textarea id="proxy-content" class="editor-textarea"></textarea>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button id="proxy-save" class="btn btn-primary" style="grid-column: auto;">Save</button>
+                            <button id="proxy-cancel" class="btn btn-secondary" style="grid-column: auto;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="nicks" class="tab-content">
+            <div class="content-wrapper">
+                 <h2>Nicknames Manager</h2>
+                <p class="page-description">Create and manage nickname lists.</p>
+                <button id="nicks-add-new" class="btn btn-primary" style="grid-column: auto; margin-bottom: 24px;">Add new nickname list</button>
+                <div class="list-editor-container">
+                    <div class="item-list-container">
+                        <h3>Existing lists</h3>
+                        <ul id="nicks-list" class="item-list"></ul>
+                    </div>
+                    <div id="nicks-editor-container" class="item-editor-container hidden">
+                        <h3>Editor</h3>
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="nicks-name">Nicks name</label>
+                            <input type="text" id="nicks-name" placeholder="Enter name">
+                        </div>
+                        <div class="form-group full-width">
+                             <label for="nicks-content">Content (one nickname per line)</label>
+                            <textarea id="nicks-content" class="editor-textarea"></textarea>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button id="nicks-save" class="btn btn-primary" style="grid-column: auto;">Save</button>
+                            <button id="nicks-cancel" class="btn btn-secondary" style="grid-column: auto;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="listeners" class="tab-content">
+            <div class="content-wrapper">
+                 <h2>Listeners Manager</h2>
+                <p class="page-description">Add new listeners to bots.</p>
+                <button id="listeners-add-new" class="btn btn-primary" style="grid-column: auto; margin-bottom: 24px;">Add new listener</button>
+                <div class="list-editor-container">
+                    <div class="item-list-container">
+                        <h3>Existing listeners</h3>
+                        <ul id="listeners-list" class="item-list"></ul>
+                    </div>
+                    <div id="listeners-editor-container" class="item-editor-container hidden">
+                        <h3>Editor</h3>
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="listeners-name">Listeners name</label>
+                            <input type="text" id="listeners-name" placeholder="Enter name">
+                        </div>
+                        <div class="form-group full-width">
+                             <label for="listeners-content">Content (one listener function per line)</label>
+                            <textarea id="listeners-content" class="editor-textarea"></textarea>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button id="listeners-save" class="btn btn-primary" style="grid-column: auto;">Save</button>
+                            <button id="listeners-cancel" class="btn btn-secondary" style="grid-column: auto;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ======================= -->
+        <!--  TA SEKCJA JEST KLUCZOWA -->
+        <!-- ======================= -->
+        <div id="killswitch" class="tab-content">
+            <div class="content-wrapper">
+                <h2>Kill Switch</h2>
+                <p class="page-description">Szybkie uruchamianie ataków na zapisane serwery.</p>
+                <button id="killswitch-add-btn" class="btn btn-primary" style="margin-bottom: 24px;">Add New Server</button>
+                
+                <div id="killswitch-servers-container" class="killswitch-grid">
+                    <!-- Content will be generated by script.js -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pusta zakładka Captcha, jeśli jej nie ma -->
+        <div id="captcha" class="tab-content">
+             <div class="content-wrapper">
+                <h2>Captcha</h2>
+                <p class="page-description" style="font-size: 1.5rem;">Coming soon...</p>
+            </div>
+        </div>
+    </main>
+  </div>
+  
+  <div id="actions-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Quick Actions</h2>
+                <button id="modal-close-btn" class="modal-close-btn">×</button>
+            </div>
+            <div class="modal-scroll-area">
+                <div id="modal-actions-list" class="modal-actions-list">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+  <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content" id="settings-modal-main">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button id="settings-modal-close-btn" class="modal-close-btn">×</button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <p>Dark Mode</p>
+                    <label class="switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+  <div id="custom-modal-overlay" class="modal-overlay">
+      <div class="modal-content" style="max-width: 450px;">
+          <div class="modal-header">
+              <h2 id="custom-modal-title"></h2>
+          </div>
+          <div id="custom-modal-body" class="custom-modal-body">
+          </div>
+          <div id="custom-modal-footer" class="custom-modal-footer">
+          </div>
+      </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

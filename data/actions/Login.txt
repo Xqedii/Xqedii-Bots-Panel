@@ -1,0 +1,2 @@
+[wait 1000]
+[chat /login XqBots!@3]
