@@ -1,2 +1,1 @@
 [chat listener]:
-    [chat Detected {message}]

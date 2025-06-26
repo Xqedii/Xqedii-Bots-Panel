@@ -477,6 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
 
         if (message.includes('Connected to server!')) {
+            console.log("!!!");
             joinedBotsCount++;
         } else if (message.includes('Starting crash')) {
             crashingBotsCount = crashingBotsCount+2;
