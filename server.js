@@ -340,207 +340,220 @@ wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ type: 'lists_updated' }));
     
 	ws.on('message', async (message) => {
-        try {
-            const data = JSON.parse(message);
-            if (data.type === 'start_attack') {
-                if (activeProcess) {
-                    ws.send(JSON.stringify({ type: 'error', message: 'Another process is already running!' }));
-                    return;
-                }
-                const { ip, amount, delay, nicksFile, actionsFile } = data.params;
-                broadcast({ type: 'log', message: 'Received start command...' });
+    try {
+        const data = JSON.parse(message);
+        if (data.type === 'start_attack') {
+    if (activeProcess) {
+        ws.send(JSON.stringify({ type: 'error', message: 'Another process is already running!' }));
+        return;
+    }
+    // Zmienne z formularza są tutaj poprawnie odbierane
+    const { ip, amount, delay, nicksFile, actionsFile } = data.params;
+    broadcast({ type: 'log', message: 'Received start command...' });
 
-                let activeProxies = { SOCKS4: null, SOCKS5: null };
-                try {
-                    const activeData = await fs.readFile(activeProxiesPath, 'utf-8');
-                    activeProxies = JSON.parse(activeData);
-                } catch(e) {
-                    console.log("Plik active_proxies.json nie znaleziony, startuję bez proxy.");
-                }
+    let activeProxies = { SOCKS4: null, SOCKS5: null };
+    try {
+        const activeData = await fs.readFile(activeProxiesPath, 'utf-8');
+        activeProxies = JSON.parse(activeData);
+    } catch(e) {
+        console.log("Plik active_proxies.json nie znaleziony, startuję bez proxy.");
+    }
 
-                const activeSocks4 = activeProxies.SOCKS4;
-                const activeSocks5 = activeProxies.SOCKS5;
+    const activeSocks4 = activeProxies.SOCKS4;
+    const activeSocks5 = activeProxies.SOCKS5;
 
-                const nicksPath = path.join(nicksDir, `${nicksFile}.txt`);
-                const actionsPath = path.join(actionsDir, `${actionsFile}.txt`);
-                const delayPlus100 = parseInt(delay, 10) + 100;
+    const nicksPath = path.join(nicksDir, `${nicksFile}.txt`);
+    const actionsPath = path.join(actionsDir, `${actionsFile}.txt`);
+    const listenersPath = path.join(process.cwd(), 'data/listeners');
 
-                const fixPath = (p) => {
-                    if (typeof p !== 'string' || p.trim() === '') return '';
-                    return p.endsWith('.txt.txt') ? p.slice(0, -4) : p;
-                }
+    const fixPath = (p) => {
+        if (typeof p !== 'string' || p.trim() === '') return '';
+        return p.endsWith('.txt.txt') ? p.slice(0, -4) : p;
+    }
 
-                const hasFileName = (p) => {
-                    if (typeof p !== 'string' || !p.trim()) return false;
-                    const parts = p.split(/[\\/]/);
-                    const lastPart = parts.pop() || '';
-                    return lastPart && lastPart.toLowerCase() !== '.txt';
-                }
+    const hasFileName = (p) => {
+        if (typeof p !== 'string' || !p.trim()) return false;
+        const parts = p.split(/[\\/]/);
+        const lastPart = parts.pop() || '';
+        return lastPart && lastPart.toLowerCase() !== '.txt';
+    }
 
-                const listenersPath = path.join(process.cwd(), 'data/listeners');
-                
-                const args = [
-                    '-jar', 'X.jar', '-s', ip, '-c', '7', '-d', '4500', '4800', '-g',
-                    ...(hasFileName(nicksPath) ? ['--nicks', fixPath(nicksPath)] : []),
-                    ...(hasFileName(actionsPath) ? ['--actions', fixPath(actionsPath)] : []),
-                    '--listeners', listenersPath
-                ];
+    const args = [
+        '-jar', 'X.jar',
+        '-s', ip,
+        '-c', amount, // Używamy wartości 'amount'
+        '-d', delay, (parseInt(delay, 10) + 200).toString(), // Używamy 'delay' i tworzymy mały zakres
+        '-g',
+        ...(hasFileName(nicksPath) ? ['--nicks', fixPath(nicksPath)] : []),
+        ...(hasFileName(actionsPath) ? ['--actions', fixPath(actionsPath)] : []),
+        '--listeners', listenersPath
+    ];
+    if (activeSocks4) {
+        const proxy4Path = path.join(proxyDir, `${activeSocks4}.txt`);
+        args.push('--socks4', fixPath(proxy4Path));
+        broadcast({ type: 'log', message: `Using active SOCKS4 proxy: ${activeSocks4}` });
+    }
+    if (activeSocks5) {
+        const proxy5Path = path.join(proxyDir, `${activeSocks5}.txt`);
+        args.push('--socks5', fixPath(proxy5Path));
+        broadcast({ type: 'log', message: `Using active SOCKS5 proxy: ${activeSocks5}` });
+    }
 
-                if (proxyPath && proxyMetaPath) {
-                    try {
-                        const metaContent = await fs.readFile(proxyMetaPath, 'utf-8');
-                        const proxyType = JSON.parse(metaContent).type || 'SOCKS5';
-                        if (proxyType === 'SOCKS4') {
-                            args.push('--socks4', proxyPath);
-                        } else {
-                            args.push('--socks5', proxyPath);
-                        }
-                        broadcast({ type: 'info', message: `[KillSwitch] Using ${proxyType} proxy: ${proxyFile}` });
-                    } catch (e) {
-                        console.error(`[KillSwitch] Could not read metadata for proxy ${proxyFile}, defaulting to SOCKS5.`);
-                        args.push('--socks5', proxyPath); // Domyślnie SOCKS5, jeśli meta-plik nie istnieje
-                    }
-                }
+    const child = spawn('java', args);
+    activeProcess = child;
+    broadcast({ type: 'status_update', isRunning: true, ip: ip, amount: amount });
+    
+    function cleanMessage(line) {
+        return line.replace(/^(IMP|INFO|CHAT|T|WARN|ERROR)\s*\|\s*/i, '').trim();
+    }
+    
+    const processOutput = (data, type) => {
+        const lines = data.toString().split('\n');
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            const messageType = line.includes('IMP |') ? 'important' : type;
+            let message = cleanMessage(line);
+            
+            const extracted = extractMessageFromComponent(message);
+            if (extracted !== message) {
+                message = extracted;
+            }
 
-                const child = spawn('java', args);
-                activeProcess = child;
-                broadcast({ type: 'status_update', isRunning: true, ip: ip, amount: amount });
-                function cleanMessage(line) {
-                    return line.replace(/^(IMP|INFO|CHAT|T|WARN|ERROR)\s*\|\s*/i, '').trim();
-                }
-                const processOutput = (data, type) => {
-                    const lines = data.toString().split('\n');
-                    for (const line of lines) {
-                        if (!line.trim()) continue;
-                        const messageType = line.includes('IMP |') ? 'important' : type;
-                        let message = cleanMessage(line);
+            if (message !== "") {
+                broadcast({ type: messageType, message });
+            }
+        }
+    };
+    child.stdout.on('data', (data) => processOutput(data, 'log'));
+    child.stderr.on('data', (data) => processOutput(data, 'error'));
+    child.on('error', (err) => {
+        broadcast({ type: 'error', message: `Error starting the process: ${err.message}` });
+        activeProcess = null;
+        broadcast({ type: 'status_update', isRunning: false });
+    });
+    child.on('close', (code) => {
+        if (!code) { code = "Stop"; }
+        broadcast({ type: 'info', message: `Process finished with code: ${code}` });
+        activeProcess = null;
+        broadcast({ type: 'status_update', isRunning: false });
+    });
+        } else if (data.type === 'start_killswitch_attack') {
+            const { id, ip, actionsFile, nicksFile, proxyFile } = data.params;
+
+            if (!ip || !id) {
+                ws.send(JSON.stringify({ type: 'error', message: 'Kill Switch Error: Missing IP or ID.' }));
+                broadcast({ type: 'killswitch_attack_finished', id });
+                return;
+            }
+            if (activeKillSwitches.has(id)) {
+                return;
+            }
+            try {
+                if (actionsFile) await fs.access(path.join(actionsDir, `${sanitize(actionsFile)}.txt`));
+                if (nicksFile) await fs.access(path.join(nicksDir, `${sanitize(nicksFile)}.txt`));
+                if (proxyFile) await fs.access(path.join(proxyDir, `${sanitize(proxyFile)}.txt`));
+            } catch(err) {
+                const missingFileType = err.path.includes(nicksDir) ? "Nicks" : err.path.includes(actionsDir) ? "Actions" : "Proxy";
+                const missingFileName = err.path.split(/[\\/]/).pop().replace('.txt', '');
+                const errorMsg = `[KillSwitch] Cannot start: ${missingFileType} file '${missingFileName}' no longer exists.`;
+                console.error(errorMsg);
+                broadcast({ type: 'error', message: errorMsg });
+                broadcast({ type: 'killswitch_attack_finished', id });
+                return;
+            }
+            activeKillSwitches.add(id);
+            broadcast({ type: 'killswitch_status_update', activeIds: Array.from(activeKillSwitches) });
+            broadcast({ type: 'lists_updated' });
+            broadcast({ type: 'info', message: `[KillSwitch] Initiating attack on ${ip}` });
+            
+            const nicksPath = nicksFile ? path.join(nicksDir, `${sanitize(nicksFile)}.txt`) : null;
+            const actionsPath = actionsFile ? path.join(actionsDir, `${sanitize(actionsFile)}.txt`) : null;
+            const proxyPath = proxyFile ? path.join(proxyDir, `${sanitize(proxyFile)}.txt`) : null;
+            const proxyMetaPath = proxyFile ? path.join(proxyDir, `${sanitize(proxyFile)}.json`) : null;
+            const listenersPath = path.join(process.cwd(), 'data/listeners');
                         
-                        const extracted = extractMessageFromComponent(message);
-                        if (extracted !== message) {
-                            message = extracted;
-                        }
+            const fixPath = (p) => {
+                if (typeof p !== 'string' || p.trim() === '') return '';
+                if (p.endsWith('.txt.txt')) { return p.slice(0, -4); }
+                return p;
+            }
+            const hasFileName = (p) => {
+                if (typeof p !== 'string') return false;
+                const trimmed = p.trim();
+                if (trimmed === '') return false;
+                const parts = trimmed.split(/[\\/]/);
+                const lastPart = parts[parts.length - 1];
+                return lastPart !== '' && lastPart.toLowerCase() !== '.txt' && lastPart.toLowerCase() !== 'undefined';
+            }
 
-                        if (message !== "") {
-                            broadcast({ type: messageType, message });
-                        }
-                    }
-                };
-                child.stdout.on('data', (data) => processOutput(data, 'log'));
-                child.stderr.on('data', (data) => processOutput(data, 'error'));
-                child.on('error', (err) => {
-                    broadcast({ type: 'error', message: `Error starting the process: ${err.message}` });
-                    activeProcess = null;
-                    broadcast({ type: 'status_update', isRunning: false });
-                });
-                child.on('close', (code) => {
-                    if (!code) { code = "Stop"; }
-                    broadcast({ type: 'info', message: `Process finished with code: ${code}` });
-                    activeProcess = null;
-                    broadcast({ type: 'status_update', isRunning: false });
-                });
-            } else if (data.type === 'start_killswitch_attack') {
-                const { id, ip, actionsFile, nicksFile, proxyFile } = data.params;
+            const args = [
+                '-jar', 'X.jar',
+                '-s', ip,
+                '-c', '7',
+                '-d', '4500', '4800',
+                '-g',
+                ...(hasFileName(nicksPath) ? ['--nicks', fixPath(nicksPath)] : []),
+                ...(hasFileName(actionsPath) ? ['--actions', fixPath(actionsPath)] : []),
+                '--listeners', listenersPath
+            ];
+            console.log(args)
 
-                if (!ip || !id) {
-                    ws.send(JSON.stringify({ type: 'error', message: 'Kill Switch Error: Missing IP or ID.' }));
-                    broadcast({ type: 'killswitch_attack_finished', id });
-                    return;
-                }
-                if (activeKillSwitches.has(id)) {
-                    return;
-                }
+            if (proxyPath && proxyMetaPath) {
                 try {
-                    if (actionsFile) await fs.access(path.join(actionsDir, `${sanitize(actionsFile)}.txt`));
-                    if (nicksFile) await fs.access(path.join(nicksDir, `${sanitize(nicksFile)}.txt`));
-                    if (proxyFile) await fs.access(path.join(proxyDir, `${sanitize(proxyFile)}.txt`));
-                } catch(err) {
-                    const missingFileType = err.path.includes(nicksDir) ? "Nicks" : "Actions";
-                    const missingFileName = err.path.split(/[\\/]/).pop().replace('.txt', '');
-                    const errorMsg = `[KillSwitch] Cannot start: ${missingFileType} file '${missingFileName}' no longer exists.`;
-                    console.error(errorMsg);
-                    broadcast({ type: 'error', message: errorMsg });
-                    broadcast({ type: 'killswitch_attack_finished', id });
-                    return;
-                }
-                activeKillSwitches.add(id);
-                broadcast({ type: 'killswitch_status_update', activeIds: Array.from(activeKillSwitches) });
-                broadcast({ type: 'lists_updated' });
-                broadcast({ type: 'info', message: `[KillSwitch] Initiating attack on ${ip}` });
-                
-                const nicksPath = nicksFile ? path.join(nicksDir, `${sanitize(nicksFile)}.txt`) : null;
-                const actionsPath = actionsFile ? path.join(actionsDir, `${sanitize(actionsFile)}.txt`) : null;
-                const proxyPath = proxyFile ? path.join(proxyDir, `${sanitize(proxyFile)}.txt`) : null;
-                const proxyMetaPath = proxyFile ? path.join(proxyDir, `${sanitize(proxyFile)}.json`) : null;
-                            
-                const fixPath = (p) => {
-                    if (typeof p !== 'string' || p.trim() === '') return '';
-                    if (p.endsWith('.txt.txt')) { return p.slice(0, -4); }
-                    return p;
-                }
-                const hasFileName = (p) => {
-                    if (typeof p !== 'string') return false;
-                    const trimmed = p.trim();
-                    if (trimmed === '') return false;
-                    const parts = trimmed.split(/[\\/]/);
-                    const lastPart = parts[parts.length - 1];
-                    return lastPart !== '' && lastPart.toLowerCase() !== '.txt' && lastPart.toLowerCase() !== 'undefined';
-                }
-
-                const args = [
-                    '-jar', 'X.jar',
-                    '-s', ip,
-                    '-c', '7',
-                    '-d', '4500', '4800',
-                    '-g',
-                    ...(hasFileName(nicksPath) ? ['--nicks', fixPath(nicksPath)] : []),
-                    ...(hasFileName(actionsPath) ? ['--actions', fixPath(actionsPath)] : []),
-                    '--listeners', listenersPath
-                ];
-
-                const killSwitchProcess = spawn('java', args);
-
-                killSwitchProcess.stdout.on('data', (data) => {
-                });
-
-                killSwitchProcess.stderr.on('data', (data) => {
-                    broadcast({ type: 'error', message: `[KillSwitch ${ip}]: ${data.toString()}` });
-                });
-
-                killSwitchProcess.on('close', (code) => {
-                    activeKillSwitches.delete(id);
-                    broadcast({ type: 'info', message: `[KillSwitch] Attack on ${ip} has finished.` });
-                    broadcast({ type: 'killswitch_status_update', activeIds: Array.from(activeKillSwitches) });
-                    broadcast({ type: 'lists_updated' });
-                });
-
-                killSwitchProcess.on('error', (err) => {
-                    activeKillSwitches.delete(id);
-                    broadcast({ type: 'error', message: `[KillSwitch] Failed to start attack on ${ip}.` });
-                    broadcast({ type: 'killswitch_status_update', activeIds: Array.from(activeKillSwitches) }); 
-                });
-            } else if (data.type === 'stop_attack') {
-                if (activeProcess) {
-                    broadcast({ type: 'info', message: 'Received stop command...' });
-                    activeProcess.kill(9);
-                } else {
-                    ws.send(JSON.stringify({ type: 'error', message: 'No active process to stop.' }));
-                }
-            } else if (data.type === 'send_command') {
-                if (activeProcess) {
-                    const command = data.command;
-                    if (command) {
-                        activeProcess.stdin.write(command + '\n');
-                        broadcast({ type: 'info', message: `Sent command: "${command}"` });
+                    const metaContent = await fs.readFile(proxyMetaPath, 'utf-8');
+                    const proxyType = JSON.parse(metaContent).type || 'SOCKS5';
+                    if (proxyType === 'SOCKS4') {
+                        args.push('--socks4', fixPath(proxyPath));
+                    } else {
+                        args.push('--socks5', fixPath(proxyPath));
                     }
-                } else {
-                    ws.send(JSON.stringify({ type: 'error', message: 'No active process. Start an attack first.' }));
+                    broadcast({ type: 'info', message: `[KillSwitch] Using ${proxyType} proxy: ${proxyFile}` });
+                } catch (e) {
+                    console.error(`[KillSwitch] Could not read metadata for proxy ${proxyFile}, defaulting to SOCKS5.`);
+                    args.push('--socks5', fixPath(proxyPath));
                 }
             }
-        } catch (e) {
-            console.error("WebSocket message error:", e);
-            ws.send(JSON.stringify({ type: 'error', message: 'Invalid command.' }));
+
+            const killSwitchProcess = spawn('java', args);
+
+            killSwitchProcess.stdout.on('data', (data) => { });
+            killSwitchProcess.stderr.on('data', (data) => {
+                broadcast({ type: 'error', message: `[KillSwitch ${ip}]: ${data.toString()}` });
+            });
+            killSwitchProcess.on('close', (code) => {
+                activeKillSwitches.delete(id);
+                broadcast({ type: 'info', message: `[KillSwitch] Attack on ${ip} has finished.` });
+                broadcast({ type: 'killswitch_status_update', activeIds: Array.from(activeKillSwitches) });
+                broadcast({ type: 'lists_updated' });
+            });
+            killSwitchProcess.on('error', (err) => {
+                activeKillSwitches.delete(id);
+                broadcast({ type: 'error', message: `[KillSwitch] Failed to start attack on ${ip}.` });
+                broadcast({ type: 'killswitch_status_update', activeIds: Array.from(activeKillSwitches) }); 
+            });
+        } else if (data.type === 'stop_attack') {
+            if (activeProcess) {
+                broadcast({ type: 'info', message: 'Received stop command...' });
+                activeProcess.kill(9);
+            } else {
+                ws.send(JSON.stringify({ type: 'error', message: 'No active process to stop.' }));
+            }
+        } else if (data.type === 'send_command') {
+            if (activeProcess) {
+                const command = data.command;
+                if (command) {
+                    activeProcess.stdin.write(command + '\n');
+                    broadcast({ type: 'info', message: `Sent command: "${command}"` });
+                }
+            } else {
+                ws.send(JSON.stringify({ type: 'error', message: 'No active process. Start an attack first.' }));
+            }
         }
-    });
+    } catch (e) {
+        console.error("WebSocket message error:", e);
+        ws.send(JSON.stringify({ type: 'error', message: 'Invalid command.' }));
+    }
+});
 
     ws.on('close', () => {
         console.log('Client disconnected');
