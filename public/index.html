@@ -55,6 +55,10 @@
                     </div>
 
                     <div class="menu-bottom">
+                        <button type="button" id="stats-btn" data-tab="stats">
+                            <span class="material-symbols-outlined">bar_chart</span>
+                            <p>Stats</p>
+                        </button>
                         <button type="button" id="settings-btn">
                             <span class="material-symbols-outlined">settings</span>
                             <p>Settings</p>
@@ -108,7 +112,7 @@
                 </div>
                 <div class="console-container">
                      <h2>Console</h2>
-                     <p class="page-description">Information from the process.</p>
+                     <p id="console-description" class="page-description">Information from the process.</p>
                      <div id="console" class="console-output">Waiting for connection to the server...</div>
                      <button id="open-actions-modal-btn" class="btn btn-secondary" style="margin-top: 16px; width: 100%;">Quick Actions</button>
                 </div>
@@ -116,7 +120,7 @@
 
             <div class="chart-container">
                 <h2>Bot Status</h2>
-                <p class="page-description">Informations about currently connected bots.</p>
+                <p class="page-description">Information about currently connected bots.</p>
                 <div class="chart-wrapper">
                     <canvas id="bots-chart"></canvas>
                 </div>
@@ -155,7 +159,7 @@
         <div id="proxy" class="tab-content">
             <div class="content-wrapper">
                 <h2>Proxy Manager</h2>
-                <p class="page-description">Create and manage proxy lists.</p>
+                <p class="page-description">Create, manage and select active proxy lists.</p>
                 <button id="proxy-add-new" class="btn btn-primary" style="grid-column: auto; margin-bottom: 24px;">Add new proxy list</button>
                 <div class="list-editor-container">
                     <div class="item-list-container">
@@ -167,6 +171,13 @@
                         <div class="form-group full-width" style="margin-bottom: 16px;">
                             <label for="proxy-name">Proxy list name</label>
                             <input type="text" id="proxy-name" placeholder="Enter name">
+                        </div>
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="proxy-type">Proxy Type</label>
+                            <select id="proxy-type">
+                                <option value="SOCKS5">SOCKS5</option>
+                                <option value="SOCKS4">SOCKS4</option>
+                            </select>
                         </div>
                         <div class="form-group full-width">
                             <label for="proxy-content">Content (one proxy per line, e.g., ip:port)</label>
@@ -254,6 +265,30 @@
              <div class="content-wrapper">
                 <h2>Captcha</h2>
                 <p class="page-description" style="font-size: 1.5rem;">Maybe someday</p>
+            </div>
+        </div>
+
+        <div id="stats" class="tab-content">
+            <div class="content-wrapper">
+                <h2>System Statistics</h2>
+                <p class="page-description">Real-time CPU and RAM usage of the server.</p>
+                
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3>CPU Usage</h3>
+                        <p id="cpu-usage-text" class="stat-value">--%</p>
+                        <div class="stat-chart-wrapper">
+                            <canvas id="cpu-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>RAM Usage</h3>
+                        <p id="ram-usage-text" class="stat-value">-- GB / -- GB</p>
+                        <div class="stat-chart-wrapper">
+                            <canvas id="ram-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

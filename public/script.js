@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const consoleOutput = document.getElementById('console');
     const attackBtn = document.getElementById('start-btn');
-    
+    const consoleDescription = document.getElementById('console-description');
+
     const ipInput = document.getElementById('ip');
     const amountInput = document.getElementById('amount');
     const versionSelect = document.getElementById('version');
@@ -10,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionsDropdown = document.getElementById('actions-dropdown');
 
     let isReconnecting = false;
+    let cpuChart, ramChart;
+    const cpuUsageText = document.getElementById('cpu-usage-text');
+    const ramUsageText = document.getElementById('ram-usage-text');
     const customModalOverlay = document.getElementById('custom-modal-overlay');
     const customModalTitle = document.getElementById('custom-modal-title');
     const customModalBody = document.getElementById('custom-modal-body');
@@ -18,6 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const killswitchContainer = document.getElementById('killswitch-servers-container');
     const addKillswitchBtn = document.getElementById('killswitch-add-btn');
     let activeKillSwitchIds = new Set();
+
+    let statsTabFirstVisit = true;
+
+    function getThemeColors() {
+        const computedStyles = getComputedStyle(document.documentElement);
+        return {
+            cpuColor: computedStyles.getPropertyValue('--text-color').trim(),
+            ramColor: computedStyles.getPropertyValue('--IMP-color').trim(),
+            chartBackground: computedStyles.getPropertyValue('--chart-background').trim(),
+            chartBorder: computedStyles.getPropertyValue('--chart-border').trim(),
+        };
+    }
 
     const saveAttackConfig = () => {
         const config = {
@@ -75,10 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
         killswitchContainer.innerHTML = '';
         
         try {
-            const [servers, allActions, allNicks] = await Promise.all([
+            const [servers, allActions, allNicks, allProxies] = await Promise.all([
                 fetch('/api/killswitches').then(res => res.json()),
                 fetch('/api/actions').then(res => res.json()),
-                fetch('/api/nicks').then(res => res.json())
+                fetch('/api/nicks').then(res => res.json()),
+                fetch('/api/proxy').then(res => res.json())
             ]);
 
             if (servers.length === 0) {
@@ -92,10 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const isActionMissing = server.actionsFile && !allActions.includes(server.actionsFile);
                 const isNickMissing = server.nicksFile && !allNicks.includes(server.nicksFile);
+                const isProxyMissing = server.proxyFile && !allProxies.map(p => p.name).includes(server.proxyFile);
                 const isInvalid = isActionMissing || isNickMissing;
-
                 const isLoading = activeKillSwitchIds.has(server.id);
-
                 const isMissingFile = isActionMissing || isNickMissing;
 
                 card.innerHTML = `
@@ -109,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="killswitch-card-info">
                         <p>Actions: <strong>${server.actionsFile || 'None'}</strong> ${isActionMissing ? '<span class="file-deleted">(deleted)</span>' : ''}</p>
                         <p>Nicks: <strong>${server.nicksFile || 'None'}</strong> ${isNickMissing ? '<span class="file-deleted">(deleted)</span>' : ''}</p>
+                        <p>Proxy: <strong>${server.proxyFile || 'None'}</strong> ${isProxyMissing ? '<span class="file-deleted">(deleted)</span>' : ''}</p>
                     </div>
                     <button class="btn btn-danger btn-turn-off ${isLoading ? 'loading' : ''} ${isMissingFile ? 'disabled-btn' : ''}" 
                         ${isLoading || isMissingFile ? 'disabled' : ''} 
@@ -117,23 +134,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="btn-spinner"></div>
                     </button>
                 `;
-                
+                    
                 card.querySelector('.btn-turn-off').addEventListener('click', (e) => {
                     const button = e.currentTarget;
                     if (button.classList.contains('loading')) return;
 
                     if (socket && socket.readyState === WebSocket.OPEN) {
+                        // Przekazujemy proxyFile do serwera
                         socket.send(JSON.stringify({
                             type: 'start_killswitch_attack',
-                            params: { id: server.id, ip: server.ip, actionsFile: server.actionsFile, nicksFile: server.nicksFile }
+                            params: { ...server } // Przekazujemy cały obiekt serwera
                         }));
                     } else {
                         customAlert('Not connected to the server!', 'Connection Error');
                     }
                 });
                 
-                card.querySelector('.edit-btn').addEventListener('click', () => handleEditKillSwitch(server, allActions, allNicks));
-
+                card.querySelector('.edit-btn').addEventListener('click', () => handleEditKillSwitch(server, allActions, allNicks, allProxies));
 
                 card.querySelector('.delete-btn').addEventListener('click', async () => {
                     const confirmed = await customConfirm(`Are you sure you want to delete the server "${server.ip}"?`);
@@ -154,13 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const showKillSwitchModal = async (config) => {
         let actionsOptions = '<option value="">None</option>';
         let nicksOptions = '<option value="">None</option>';
+        let proxyOptions = '<option value="">None</option>';
 
         try {
-            const actions = await (await fetch('/api/actions')).json();
-            const nicks = await (await fetch('/api/nicks')).json();
+            const { allActions, allNicks, allProxies } = config;
             
-            actions.forEach(name => actionsOptions += `<option value="${name}" ${config.server && config.server.actionsFile === name ? 'selected' : ''}>${name}</option>`);
-            nicks.forEach(name => nicksOptions += `<option value="${name}" ${config.server && config.server.nicksFile === name ? 'selected' : ''}>${name}</option>`);
+            allActions.forEach(name => actionsOptions += `<option value="${name}" ${config.server && config.server.actionsFile === name ? 'selected' : ''}>${name}</option>`);
+            allNicks.map(n => n.name || n).forEach(name => nicksOptions += `<option value="${name}" ${config.server && config.server.nicksFile === name ? 'selected' : ''}>${name}</option>`);
+            
+            allProxies.forEach(proxy => proxyOptions += `<option value="${proxy.name}" ${config.server && config.server.proxyFile === proxy.name ? 'selected' : ''}>${proxy.name} (${proxy.type})</option>`);
         } catch (e) {
             console.error("Failed to load lists for Kill Switch modal", e);
             customAlert("Could not load Action/Nick lists.", "Error");
@@ -183,6 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label for="ks-nicks">Nicknames</label>
                         <select id="ks-nicks">${nicksOptions}</select>
                     </div>
+                    <div class="form-group">
+                        <label for="ks-proxy">Proxy</label>
+                        <select id="ks-proxy">${proxyOptions}</select>
+                    </div>
                 </div>`,
             buttons: [
                 { text: 'Cancel', class: 'btn-secondary', resolves: null },
@@ -194,23 +217,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const ip = document.getElementById('ks-ip').value;
             const actionsFile = document.getElementById('ks-actions').value;
             const nicksFile = document.getElementById('ks-nicks').value;
+            const proxyFile = document.getElementById('ks-proxy').value; // Pobieramy wartość z nowego pola
 
             if (!ip) {
                 customAlert('Server IP cannot be empty!', 'Validation Error');
                 return null;
             }
-            return { ip, actionsFile, nicksFile };
+            return { ip, actionsFile, nicksFile, proxyFile };
         }
         return null;
     };
     
     if (addKillswitchBtn) {
         addKillswitchBtn.addEventListener('click', async () => {
+            // Pobieramy wszystkie listy przed otwarciem modala
+            const [allActions, allNicks, allProxies] = await Promise.all([
+                fetch('/api/actions').then(res => res.json()),
+                fetch('/api/nicks').then(res => res.json()),
+                fetch('/api/proxy').then(res => res.json())
+            ]);
+
             const data = await showKillSwitchModal({
                 title: 'Add New Kill Switch Server',
-                confirmText: 'Add Server'
+                confirmText: 'Add Server',
+                allActions, allNicks, allProxies // Przekazujemy listy
             });
-    
+
             if (data) {
                 await fetch('/api/killswitches', {
                     method: 'POST',
@@ -219,15 +251,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
-    } else {
-        console.error("Error: Button with ID 'killswitch-add-btn' was not found in the document.");
     }
 
-    const handleEditKillSwitch = async (server) => {
+    const handleEditKillSwitch = async (server, allActions, allNicks, allProxies) => {
         const data = await showKillSwitchModal({
             title: 'Edit Kill Switch Server',
             confirmText: 'Save Changes',
-            server: server
+            server: server,
+            allActions, allNicks, allProxies // Przekazujemy listy
         });
 
         if (data) {
@@ -238,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     };
-
 
     const showCustomModal = (config) => {
         return new Promise((resolve) => {
@@ -338,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let reconnectInterval = null;
 
     let botsChart;
+    let createdBotsCount = 0;
     let joinedBotsCount = 0;
     let crashingBotsCount = 0;
     let listenersCount = 0;
@@ -357,6 +388,14 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: [...initialLabels],
                 datasets: [
+                    {
+                        label: 'Created',
+                        data: [...initialData],
+                        borderColor: 'rgb(250, 100, 237)',
+                        backgroundColor: 'rgba(250, 100, 237, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    },
                     {
                         label: 'Connected',
                         data: [...initialData],
@@ -423,17 +462,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateChartTheme = () => {
-        if (!botsChart) return;
-        const textColorDesc = getComputedStyle(document.documentElement).getPropertyValue('--text-color-desc');
-        const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
-        const textColorMuted = getComputedStyle(document.documentElement).getPropertyValue('--text-color-muted');
+        if (botsChart) {
+            const textColorDesc = getComputedStyle(document.documentElement).getPropertyValue('--text-color-desc');
+            const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
+            const textColorMuted = getComputedStyle(document.documentElement).getPropertyValue('--text-color-muted');
 
-        botsChart.options.scales.y.ticks.color = textColorDesc;
-        botsChart.options.scales.y.grid.color = borderColor;
-        botsChart.options.scales.x.ticks.color = textColorDesc;
-        botsChart.options.scales.x.grid.color = borderColor;
-        botsChart.options.plugins.legend.labels.color = textColorMuted;
-        botsChart.update();
+            botsChart.options.scales.y.ticks.color = textColorDesc;
+            botsChart.options.scales.y.grid.color = borderColor;
+            botsChart.options.scales.x.ticks.color = textColorDesc;
+            botsChart.options.scales.x.grid.color = borderColor;
+            botsChart.options.plugins.legend.labels.color = textColorMuted;
+            botsChart.update();
+        }
+        if(cpuChart) cpuChart.update();
+        if(ramChart) ramChart.update();
     };
 
     setInterval(() => {
@@ -444,9 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const chartData = botsChart.data;
         
         chartData.labels.push(new Date().toLocaleTimeString());
-        chartData.datasets[0].data.push(joinedBotsCount);
-        chartData.datasets[1].data.push(crashingBotsCount);
-        chartData.datasets[2].data.push(listenersCount);
+        chartData.datasets[0].data.push(createdBotsCount);
+        chartData.datasets[1].data.push(joinedBotsCount);
+        chartData.datasets[2].data.push(crashingBotsCount);
+        chartData.datasets[3].data.push(listenersCount);
 
         if (chartData.labels.length > 15) {
             chartData.labels.shift();
@@ -476,13 +519,15 @@ document.addEventListener('DOMContentLoaded', () => {
         consoleOutput.appendChild(line);
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
 
-        if (message.includes('Connected to server!')) {
-            console.log("!!!");
+        if (message.includes('Creating bot')) {
+            createdBotsCount++;
+        } else if (message.includes('Connected to server!')) {
             joinedBotsCount++;
         } else if (message.includes('Starting crash')) {
             crashingBotsCount = crashingBotsCount+2;
         } else if (message.includes('All bots disconnected')) {
             joinedBotsCount = 0;
+            createdBotsCount = 0;
             crashingBotsCount = 0;
         } else if (message.includes(' disconnected')) {
             joinedBotsCount = Math.max(0, joinedBotsCount - 1);
@@ -501,17 +546,11 @@ document.addEventListener('DOMContentLoaded', () => {
             attackBtn.classList.remove('btn-danger');
         }
     };
-    
-    const clearAllKillSwitchLoadingStates = () => {
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('ks_loading_')) {
-                localStorage.removeItem(key);
-            }
-        });
-    };
 
     const connect = () => {
-        socket = new WebSocket(`ws://${window.location.host}`);
+		const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+		
+		socket = new WebSocket(`${protocol}://${window.location.host}/api/`);
 
         socket.onopen = () => {
             console.log('Xqedii Bots | Panel loaded');
@@ -531,10 +570,49 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = JSON.parse(event.data);
             if (data.type === 'status_update') {
                 updateAttackButton(data.isRunning);
+                
+                if (data.isRunning && data.ip && data.amount) {
+                    consoleDescription.innerHTML = `Current information from the <b>${data.ip}</b>`;
+
+                    if (botsChart) {
+                        botsChart.options.scales.y.suggestedMax = Number(data.amount) + Math.floor(Number(data.amount) / 10);
+                        botsChart.update();
+                    }
+
+                } else {
+                    consoleDescription.innerHTML = 'Information from the process.';
+                    createdBotsCount = 0;
+                    joinedBotsCount = 0;
+                    crashingBotsCount = 0;
+                    listenersCount = 0; 
+                    
+                    if (botsChart) {
+                        botsChart.options.scales.y.suggestedMax = 10;
+                        botsChart.update();
+                    }
+                }
             } else if (data.type === 'lists_updated') {
                 renderAll(); 
             } else if (data.type === 'killswitch_status_update') {
                 activeKillSwitchIds = new Set(data.activeIds);
+            } else if (data.type === 'system_stats') { 
+                const { cpu, ramPercent, usedRamGb, totalRamGb } = data.payload;
+                
+                if (cpuChart && cpuUsageText && cpu !== undefined) {
+                    cpuChart.data.datasets[0].data[0] = cpu;
+                    cpuChart.data.datasets[0].data[1] = 100 - cpu;
+                    cpuChart.update();
+                    
+                    cpuUsageText.textContent = `${cpu.toFixed(1)}%`;
+                }
+
+                if (ramChart && ramUsageText && ramPercent !== undefined && usedRamGb !== undefined && totalRamGb !== undefined) {
+                    ramChart.data.datasets[0].data[0] = ramPercent;
+                    ramChart.data.datasets[0].data[1] = 100 - ramPercent;
+                    ramChart.update();
+                    
+                    ramUsageText.textContent = `${usedRamGb.toFixed(1)} GB / ${totalRamGb.toFixed(1)} GB`;
+                }
             } else {
                 logToConsole(data);
             }
@@ -566,6 +644,20 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const targetTab = button.getAttribute('data-tab');
 
+            if (targetTab === 'stats' && statsTabFirstVisit) {
+                if (ramChart && cpuChart) {
+                    ramChart.options.animation.duration = 0;
+                    cpuChart.options.animation.duration = 0;
+                    ramChart.update();
+                    cpuChart.update();
+                    setTimeout(() => {
+                        ramChart.options.animation.duration = 1000;
+                        cpuChart.options.animation.duration = 1000;
+                    }, 100);
+                }
+                statsTabFirstVisit = false;
+            }
+
             navButtons.forEach(b => b.classList.remove('active'));
             tabContents.forEach(t => t.classList.remove('active'));
 
@@ -578,15 +670,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     attackBtn.addEventListener('click', () => {
-         if (socket.readyState !== WebSocket.OPEN) {
+         if (!socket || socket.readyState !== WebSocket.OPEN) {
             logToConsole({type: 'error', message: 'Not connected to server. Please wait.'});
             return;
         }
 
         if (attackBtn.textContent === 'Start') {
             consoleOutput.innerHTML = "";
+            createdBotsCount = 0;
             joinedBotsCount = 0;
             crashingBotsCount = 0;
+
             const params = {
                 ip: document.getElementById('ip').value,
                 amount: document.getElementById('amount').value,
@@ -594,15 +688,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 nicksFile: document.getElementById('nicks-dropdown').value,
                 actionsFile: document.getElementById('actions-dropdown').value,
             };
+
             if (!params.ip || !params.amount || !params.delay) {
                 logToConsole({type: 'error', message: 'Please fill in all required fields!'});
                 return;
             }
-            botsChart.options.scales.y.suggestedMax = Number(params.amount) + Math.floor(Number(params.amount) / 10);
-            botsChart.update();
-            socket.send(JSON.stringify({ type: 'start_attack', params: { ...params, nicksFile: params.nicksFile, actionsFile: params.actionsFile } }));
+            socket.send(JSON.stringify({ type: 'start_attack', params: params }));
         } else {
             socket.send(JSON.stringify({ type: 'stop_attack' }));
+            createdBotsCount = 0;
             joinedBotsCount = 0;
             crashingBotsCount = 0;
             botsChart.update();
@@ -610,177 +704,159 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function setupListEditor(type) {
+        // --- Zmienne bez zmian ---
         let currentEditingName = null;
-        let currentEditingTimestamp = null; 
+        let currentEditingTimestamp = null;
         const listEl = document.getElementById(`${type}-list`);
         const editorContainer = document.getElementById(`${type}-editor-container`);
         const nameInput = document.getElementById(`${type}-name`);
         const contentTextarea = document.getElementById(`${type}-content`);
         const saveBtn = document.getElementById(`${type}-save`);
+        const typeSelect = type === 'proxy' ? document.getElementById('proxy-type') : null;
 
         const renderList = async () => {
             try {
-                const response = await fetch(`/api/${type}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const names = await response.json();
+                const [itemsResponse, activeProxiesResponse] = await Promise.all([
+                    fetch(`/api/${type}`),
+                    type === 'proxy' ? fetch('/api/active-proxies') : Promise.resolve(null)
+                ]);
+
+                if (!itemsResponse.ok) throw new Error(`HTTP error! status: ${itemsResponse.status}`);
+                const items = await itemsResponse.json();
+                const activeProxies = type === 'proxy' ? await activeProxiesResponse.json() : {};
 
                 listEl.innerHTML = '';
-                if (names.length === 0) {
+                if (items.length === 0) {
                     listEl.innerHTML = `<li>No saved lists.</li>`;
+                    return;
                 }
-                names.forEach(name => {
+
+                items.forEach(item => {
+                    const itemName = (typeof item === 'object') ? item.name : item;
+                    const itemType = (typeof item === 'object' && item.type) ? item.type : null;
+
                     const li = document.createElement('li');
-                    li.textContent = name;
-                    li.dataset.name = name;
+                    li.dataset.name = itemName; // Zapisujemy nazwę w atrybucie data-*
+                    li.style.cursor = 'pointer'; // Kursor dla całego elementu
 
-                    const controlsDiv = document.createElement('div');
-                    controlsDiv.className = 'list-item-controls';
+                    // Tworzymy strukturę HTML za pomocą innerHTML dla prostoty, ale zdarzenia dodamy inaczej
+                    let mainContentHTML = '';
+                    if (type === 'proxy' && itemType) {
+                        const isActive = (itemType === 'SOCKS4' && activeProxies.SOCKS4 === itemName) || (itemType === 'SOCKS5' && activeProxies.SOCKS5 === itemName);
+                        mainContentHTML = `
+                            <div class="proxy-info">
+                                <div class="use-proxy-btn ${isActive ? 'active' : ''}"></div>
+                                <span>${itemName}</span>
+                                <span class="proxy-type-badge">${itemType}</span>
+                            </div>
+                        `;
+                    } else {
+                        mainContentHTML = `<span>${itemName}</span>`;
+                    }
 
-                    const renameBtn = document.createElement('button');
-                    renameBtn.className = 'rename-btn';
-                    renameBtn.innerHTML = '<span class="material-symbols-outlined">edit</span>';
-                    renameBtn.title = `Rename "${name}"`;
-                    renameBtn.onclick = async (e) => {
-                        e.stopPropagation();
-                        const newName = await customPrompt(`Enter a new name for "${name}":`, name, 'Rename List');
-                        if (newName && newName.trim() && newName !== name) {
+                    li.innerHTML = `
+                        ${mainContentHTML}
+                        <div class="list-item-controls">
+                            <button class="rename-btn" title="Rename"><span class="material-symbols-outlined">edit</span></button>
+                            <button class="delete-btn" title="Delete"><span class="material-symbols-outlined">delete</span></button>
+                        </div>
+                    `;
+
+                    // === JEDEN GŁÓWNY NASŁUCHIWACZ ZDARZEŃ ===
+                    li.addEventListener('click', async (e) => {
+                        const target = e.target;
+                        const itemNameFromDataset = li.dataset.name;
+
+                        // Sprawdzamy, czy kliknięto na któryś z przycisków
+                        if (target.closest('.use-proxy-btn')) {
+                            // AKCJA: Użyj proxy
                             try {
-                                const renameResponse = await fetch(`/api/${type}/${name}`, {
-                                    method: 'PUT',
+                                await fetch('/api/active-proxies', {
+                                    method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ newName: newName.trim() })
+                                    body: JSON.stringify({ type: itemType, name: itemNameFromDataset })
                                 });
-                                if (!renameResponse.ok) {
-                                    const errorText = await renameResponse.text();
-                                    throw new Error(errorText);
-                                }
-                                if (currentEditingName === name) {
-                                    hideEditor();
-                                }
                             } catch (error) {
-                                await customAlert(`Error renaming file: ${error.message}`, 'Error');
+                                console.error("Failed to set active proxy:", error);
                             }
+                            return; // Kończymy, aby nie odpalić edycji
                         }
-                    };
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.innerHTML = '<span class="material-symbols-outlined">delete</span>';
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.title = `Delete "${name}"`;
-                    deleteBtn.onclick = async (e) => {
-                        e.stopPropagation();
-                        const confirmed = await customConfirm(`Are you sure you want to delete the list <b>"${name}"</b>?`);
-                        if (confirmed) {
-                            await fetch(`/api/${type}/${name}`, { method: 'DELETE' });
-                            if (currentEditingName === name) hideEditor();
+                        if (target.closest('.rename-btn')) {
+                            // AKCJA: Zmień nazwę
+                            const newName = await customPrompt(`Enter a new name for "${itemNameFromDataset}":`, itemNameFromDataset);
+                            if (newName && newName.trim() && newName !== itemNameFromDataset) {
+                                try {
+                                    await fetch(`/api/${type}/${itemNameFromDataset}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newName: newName.trim() }) });
+                                    if (currentEditingName === itemNameFromDataset) hideEditor();
+                                } catch (error) {
+                                    await customAlert(`Error: ${error.message}`);
+                                }
+                            }
+                            return; // Kończymy
                         }
-                    };
+                        if (target.closest('.delete-btn')) {
+                            // AKCJA: Usuń
+                            if (await customConfirm(`Delete <b>"${itemNameFromDataset}"</b>?`)) {
+                                await fetch(`/api/${type}/${itemNameFromDataset}`, { method: 'DELETE' });
+                                if (currentEditingName === itemNameFromDataset) hideEditor();
+                            }
+                            return; // Kończymy
+                        }
 
-                    controlsDiv.appendChild(renameBtn);
-                    controlsDiv.appendChild(deleteBtn);
-                    li.appendChild(controlsDiv);
+                        // DOMYŚLNA AKCJA: Jeśli nie kliknięto na żaden przycisk, otwórz edytor
+                        editItem(itemNameFromDataset);
+                    });
 
-                    li.addEventListener('click', () => editItem(name));
                     listEl.appendChild(li);
                 });
-                if (type !== 'listeners' && type !== 'proxy') {
-                    updateDropdowns(type, names);
+                
+                if (type === 'nicks' || type === 'actions') {
+                    const itemNames = items.map(item => (typeof item === 'object' ? item.name : item));
+                    updateDropdowns(type, itemNames);
                 }
             } catch (error) {
-                console.error(`Error while loading the ${type} list:`, error);
-                logToConsole({type: 'error', message: `Failed to load the "${type}" list.`});
+                console.error(`Krytyczny błąd w renderList:`, error);
             }
         };
-
+        
+        // Reszta funkcji (showEditor, editItem, etc.) pozostaje bez zmian
         const showEditor = () => editorContainer.classList.remove('hidden');
         const hideEditor = () => {
             editorContainer.classList.add('hidden');
             nameInput.value = '';
             contentTextarea.value = '';
+            if (typeSelect) typeSelect.value = 'SOCKS5';
             currentEditingName = null;
             currentEditingTimestamp = null;
             nameInput.disabled = false;
             saveBtn.disabled = false;
-            listEl.querySelectorAll('li').forEach(li => li.classList.remove('selected'));
+            listEl.querySelectorAll('li.selected').forEach(li => li.classList.remove('selected'));
         };
-
         const editItem = async (name) => {
             try {
                 const response = await fetch(`/api/${type}/${name}`);
                 if (!response.ok) throw new Error('File not found');
                 const data = await response.json();
-
                 currentEditingName = name;
                 currentEditingTimestamp = data.lastModified;
-
                 nameInput.value = name;
                 nameInput.disabled = true;
                 contentTextarea.value = data.content;
+                if (typeSelect && data.type) typeSelect.value = data.type;
                 saveBtn.disabled = false;
                 showEditor();
-
-                listEl.querySelectorAll('li').forEach(li => {
-                    li.classList.toggle('selected', li.dataset.name === name);
-                });
+                nameInput.focus();
+                listEl.querySelectorAll('li').forEach(li => { li.classList.toggle('selected', li.dataset.name === name) });
             } catch (err) {
-                await customAlert("Could not load file. It might have been deleted by another user.", "Loading Error");
+                await customAlert("Could not load file. It might have been deleted.", "Loading Error");
                 hideEditor();
                 renderAll();
             }
         };
-
-        document.getElementById(`${type}-add-new`).addEventListener('click', () => {
-            currentEditingName = null;
-            currentEditingTimestamp = null;
-            nameInput.value = '';
-            contentTextarea.value = '';
-            nameInput.disabled = false;
-            saveBtn.disabled = false;
-            showEditor();
-            listEl.querySelectorAll('li').forEach(li => li.classList.remove('selected'));
-        });
-
+        document.getElementById(`${type}-add-new`).addEventListener('click', () => { hideEditor(); currentEditingName = null; currentEditingTimestamp = null; nameInput.value = ''; contentTextarea.value = ''; nameInput.disabled = false; saveBtn.disabled = false; if (typeSelect) typeSelect.value = 'SOCKS5'; showEditor(); nameInput.focus(); });
         document.getElementById(`${type}-cancel`).addEventListener('click', hideEditor);
-
-        saveBtn.addEventListener('click', async () => {
-            const name = nameInput.value.trim();
-            const content = contentTextarea.value;
-            if (!name) {
-                await customAlert('Name cannot be empty!', 'Validation Error');
-                return;
-            }
-            
-            saveBtn.disabled = true;
-
-            try {
-                const response = await fetch(`/api/${type}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        name, 
-                        content, 
-                        lastModified: currentEditingTimestamp
-                    })
-                });
-
-                if (response.status === 409) {
-                    await customAlert('Save failed! This file was modified by another user. Please cancel and reopen the editor to get the latest version.', 'Conflict');
-                    return; 
-                }
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText || "An unknown error occurred.");
-                }
-
-                hideEditor();
-            } catch (error) {
-                await customAlert(`Error saving file: ${error.message}`, 'Save Error');
-            } finally {
-                saveBtn.disabled = false;
-            }
-        });
-
+        saveBtn.addEventListener('click', async () => { const name = nameInput.value.trim(); const content = contentTextarea.value; if (!name) { await customAlert('Name cannot be empty!'); return; } saveBtn.disabled = true; const payload = { name, content, lastModified: currentEditingTimestamp }; if (typeSelect) payload.type = typeSelect.value; try { const response = await fetch(`/api/${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (response.status === 409) { await customAlert('Save failed! This file was modified by another user.', 'Conflict'); return; } if (!response.ok) throw new Error(await response.text()); hideEditor(); } catch (error) { await customAlert(`Error saving file: ${error.message}`, 'Save Error'); } finally { saveBtn.disabled = false; } });
+        
         return { renderList };
     }
 
@@ -946,4 +1022,95 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     setTheme(savedTheme);
     initializeChart();
+    initializeStatsCharts();
+
+    function initializeStatsCharts() {
+        const textCenterPlugin = {
+            id: 'textCenter',
+            afterDraw(chart) {
+                const { ctx } = chart;
+                ctx.save();
+                const value = chart.data.datasets[0].data[0];
+                const text = `${value}%`;
+                
+                const x = chart.getDatasetMeta(0).data[0].x;
+                const y = chart.getDatasetMeta(0).data[0].y;
+                
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color-muted');
+                ctx.fillText(text, x, y);
+                ctx.restore();
+            }
+        };
+
+        const createDoughnutConfig = (colors, borderColor) => ({
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [0, 100],
+                    backgroundColor: colors,
+                    borderColor: borderColor,
+                    borderWidth: 4,
+                    circumference: 360,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutCubic',
+                    animateScale: false
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false },
+                    textCenter: {}
+                }
+            },
+            plugins: [textCenterPlugin]
+        });
+        function updateChartColors() {
+            const colors = getThemeColors();
+
+            if (cpuChart) {
+                cpuChart.data.datasets[0].backgroundColor = [colors.cpuColor, colors.chartBackground];
+                cpuChart.data.datasets[0].borderColor = colors.chartBorder;
+                cpuChart.update('none');
+            }
+            if (ramChart) {
+                ramChart.data.datasets[0].backgroundColor = [colors.ramColor, colors.chartBackground];
+                ramChart.data.datasets[0].borderColor = colors.chartBorder;
+                ramChart.update('none');
+            }
+        }
+        function initializeCharts() {
+            const initialColors = getThemeColors();
+
+            const cpuCtx = document.getElementById('cpu-chart')?.getContext('2d');
+            if (cpuCtx) {
+                const cpuChartColors = [initialColors.cpuColor, initialColors.chartBackground];
+                cpuChart = new Chart(cpuCtx, createDoughnutConfig(cpuChartColors, initialColors.chartBorder));
+            }
+
+            const ramCtx = document.getElementById('ram-chart')?.getContext('2d');
+            if (ramCtx) {
+                const ramChartColors = [initialColors.ramColor, initialColors.chartBackground];
+                ramChart = new Chart(ramCtx, createDoughnutConfig(ramChartColors, initialColors.chartBorder));
+            }
+        }
+        initializeCharts();
+        const themeObserver = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+                    updateChartColors();
+                    break;
+                }
+            }
+        });
+        themeObserver.observe(document.documentElement, { attributes: true });
+    };
 });

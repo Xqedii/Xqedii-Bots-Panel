@@ -13,6 +13,7 @@
   "dependencies": {
     "chartjs-plugin-streaming": "^2.0.0",
     "express": "^5.1.0",
+    "os-utils": "^0.0.14",
     "ws": "^8.18.2"
   }
 }
