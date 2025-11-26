@@ -24,9 +24,21 @@ In this category you can create custom nicknames from which bots will join the s
 ![image](https://github.com/user-attachments/assets/f4450f8a-b621-4dc8-9bc1-3f56f36dfac1)
 
 ## Listeners
-You can also choose what the bots should do after receiving a specific package, e.g. from chat, actionbar or bossbar.
+You can also choose what the bots should do after receiving a specific package, e.g. from chat, actionbar or bossbar
 ![image](https://github.com/user-attachments/assets/a192d403-37fc-492c-901b-bb99b7044deb)
 
 ## Darkmode
-The panel also has a dark theme that can be set in the settings.
+The panel also has a dark theme that can be set in the settings
 ![image](https://github.com/user-attachments/assets/5cf998a0-e9a2-45dd-9a99-62bf83c64542)
+
+## Ascii Art Manager
+Once the bots are connected, you can send Ascii Art to the chat
+<img width="2899" height="1312" alt="image" src="https://github.com/user-attachments/assets/e494966f-6db4-4cb3-a4b0-3298c5276315" />
+
+## Velocity 
+Thanks to Velocity with ViaVersion, bots can connect from any version to any server
+<img width="2923" height="1298" alt="image" src="https://github.com/user-attachments/assets/2b51b922-a05b-4b11-8ddd-8f1d2edbf976" />
+
+## Stats
+The statistics panel shows the current CPU and RAM usage
+<img width="2917" height="1307" alt="image" src="https://github.com/user-attachments/assets/28388f81-4d94-4cab-b8a5-d46544669100" />
