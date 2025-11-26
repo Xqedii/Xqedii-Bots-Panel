@@ -1,0 +1,184 @@
+Listeners Documentation
+
+A listener file consists of Headers, Conditions, and Actions.
+
+File Structure
+
+[TYPE listener]:
+[if {variable} operator "value"]:
+    [action]
+    [action]
+
+1. Listener Types (Headers)
+
+Defines which event the bot monitors.
+
+[CHAT listener]:
+Listens to standard chat messages.
+
+[BOSSBAR listener]:
+Listens to text inside the Boss Bar.
+
+[ACTIONBAR listener]:
+Listens to text above the hotbar.
+
+2. Conditions
+
+Defines when the actions should trigger.
+
+Format: [if {placeholder} operator "value"]:
+
+Available Placeholders
+
+{message} - The full raw message received from the server.
+
+{player} - The name of the player who sent the message (Chat only).
+
+{playermsg} - The message content sent by a player (Chat only).
+
+Available Operators
+
+contains - Checks if the text contains the value (case-insensitive).
+
+notcontains - Checks if the text does not contain the value.
+
+is - Checks if the text matches exactly (case-insensitive).
+
+isnot - Checks if the text is different.
+
+3. Actions
+
+Actions must be indented (using spaces or tabs) under a condition. An action is any command supported by the bot's script engine.
+
+Action Placeholders
+
+You can use these dynamic values inside your actions:
+
+Placeholder	Description
+{code}	Automatically extracts a 5-10 character alphanumeric code from the message (useful for CAPTCHAs).
+{player}	The username of the player who triggered the event.
+{playermsg}	The specific message the player typed.
+{message}	The full original server message.
+Available Commands
+Chat & Commands
+
+Chat
+Sends a public chat message to the server.
+Syntax: [chat <message>]
+Example: [chat Hello everyone!]
+
+Execute
+Executes a server command (automatically adds / if missing).
+Syntax: [execute <command>] or [cmd <command>]
+Example: [cmd /spawn]
+
+Log
+Prints a message to the local bot console (only visible to you).
+Syntax: [log <text>]
+Example: [log The bot has successfully logged in.]
+
+Login
+Executes the hardcoded login command (/login XqBots!@3).
+Syntax: [login]
+
+Register
+Executes the hardcoded register command (/register ...).
+Syntax: [register]
+
+Ascii
+Sends a sequence of messages from a file (or default "a, s, c, i, i" spam).
+Syntax: [ascii <optional_file_path>]
+Example: [ascii] or [ascii spam.txt]
+
+Movement & Positioning
+
+Goto
+Moves the bot smoothly to specific absolute coordinates.
+Syntax: [goto <x> <y> <z>]
+Example: [goto 100.5 64 200.5]
+
+Move
+Teleports the bot relative to its current position (adds X/Y/Z to current coords).
+Syntax: [move <x> <y> <z>]
+Example: [move 0 5 0] (Teleports 5 blocks up)
+
+Wait
+Pauses the execution of the script for a specific amount of milliseconds.
+Syntax: [wait <milliseconds>]
+Example: [wait 2000] (Waits for 2 seconds)
+
+Interaction & Inventory
+
+Right
+Simulates a right-click with the item currently held in the main hand.
+Syntax: [right]
+
+Slot
+Selects a specific hotbar slot (0-8).
+Syntax: [slot <number>]
+Example: [slot 0] (Selects the first slot)
+
+Gui
+Clicks a specific slot number in an open inventory (chest/menu).
+Syntax: [gui <slot_id>]
+Example: [gui 12]
+
+Crash
+Starts the crasher module (sends invalid packets to the server).
+Syntax: [crash]
+
+Script Logic
+
+Loop
+Repeats the indented actions below it a specific number of times.
+Syntax: [loop <count>]:
+Example:
+
+[loop 5]:
+    [right]
+    [wait 100]
+
+4. Code Examples
+
+Auto Register & CAPTCHA
+This listener detects a CAPTCHA code in the chat.
+
+[CHAT listener]:
+[if {message} contains "/register"]:
+    [wait 500]
+    [cmd /register XqBots!@3 XqBots!@3 {code}]
+
+Responding to Player Commands
+This listener waits for a specific player to type !come and moves the bot.
+
+[CHAT listener]:
+[if {playermsg} is "!come"]:
+    [chat I am coming, {player}!]
+    [goto 100 64 100]
+
+Bossbar Detection
+Detects when a minigame is starting via the Bossbar.
+
+[BOSSBAR listener]:
+[if {message} contains "Game Starting"]:
+    [cmd /ready]
+
+Inventory Interaction
+Selects a game mode from a GUI menu.
+
+[CHAT listener]:
+[if {message} contains "Select gamemode"]:
+    [wait 1000]
+    [slot 4]
+    [wait 500]
+    [right]
+    [wait 500]
+    [gui 1]
+
+5. Technical Notes
+
+Indentation: Actions must be indented (at least 4 spaces or 1 tab) under the [if ...]: line, otherwise they will be ignored.
+
+Comments: Lines starting with # or empty lines are ignored.
+
+Code Extraction: The {code} placeholder automatically looks for a sequence of 5 to 10 alphanumeric characters (A-Z, 0-9) in the message. If your action uses {code} but no code is found in the message, the action is skipped.
