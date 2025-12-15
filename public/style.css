@@ -474,12 +474,6 @@ html[data-theme='dark'] .console-output .log-info { color: #89b4fa; font-weight:
     text-align: center;
 }
 
-
-
-
-
-
-/* Layout elementu ustawień */
 .setting-item {
     display: flex;
     justify-content: space-between;
@@ -897,15 +891,13 @@ input:focus {
     margin-bottom: 8px;
 }
 
-/* --- Velocity Modal Styles --- */
-
 #velocity-modal .modal-content {
     max-width: 800px;
     width: 90%;
     display: flex;
     flex-direction: column;
     max-height: 90vh;
-    height: 50vh; /* Tutaj zmieniasz wysokość całego okna */
+    height: 50vh;
 }
 
 #velocity-modal .modal-header {
@@ -919,12 +911,11 @@ input:focus {
     margin: 0;
 }
 
-/* Nadpisujemy standardowe style konsoli tylko dla tego modala */
 #velocity-modal #velocity-console-output {
-    flex: 1;            /* Rozciąga konsolę, aby wypełniła wolne miejsce */
-    min-height: 0;      /* Zapobiega wyjściu poza kontener flex */
+    flex: 1;
+    min-height: 0;
     margin-bottom: 15px;
-    max-height: none;   /* Usuwa limit 400px ze zwykłej konsoli */
+    max-height: none;
 }
 
 #velocity-modal .modal-footer {
@@ -936,7 +927,6 @@ input:focus {
 
 
 
-/* Toast Notifications */
 .toast-container {
     position: fixed;
     bottom: 30px;
@@ -1059,7 +1049,6 @@ input:focus {
 
 
 
-/* Slider Styling */
 .styled-slider {
     -webkit-appearance: none;
     width: 100%;
@@ -1076,7 +1065,7 @@ input:focus {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--text-color); /* Fioletowy kolor z motywu */
+    background: var(--text-color);
     cursor: pointer;
     border: 2px solid var(--theme-bg);
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -1097,7 +1086,6 @@ input:focus {
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* Stan aktywny dla kontenera slidera */
 #reconnect-slider-container.active {
     opacity: 1 !important;
     pointer-events: auto !important;
@@ -1150,14 +1138,13 @@ input:focus {
     white-space: nowrap;
 }
 
-/* --- ViaProxy Modal Styles (Kopia styli Velocity) --- */
 #viaproxy-console-modal .modal-content {
     max-width: 800px;
     width: 90%;
     display: flex;
     flex-direction: column;
     max-height: 90vh;
-    height: 50vh; /* Stała wysokość */
+    height: 50vh;
 }
 
 #viaproxy-console-modal .modal-header {
@@ -1175,9 +1162,9 @@ input:focus {
     flex: 1;
     min-height: 0;
     margin-bottom: 15px;
-    max-height: none; /* Resetuje standardowy limit */
-    overflow-y: auto; /* Scrollowanie */
-    background-color: var(--web-bg); /* Opcjonalnie ciemniejsze tło */
+    max-height: none;
+    overflow-y: auto;
+    background-color: var(--web-bg);
     font-family: monospace;
 }
 

@@ -20,18 +20,15 @@ public class MainListener implements SessionListener {
         Component message = null;
         String packetType = "";
 
-        // 1. Sprawdzamy zwykły ChatPacket (tu wpada czat graczy ORAZ wiadomości systemowe w starszych libach)
         if (packet instanceof ClientboundChatPacket) {
             message = ((ClientboundChatPacket) packet).getMessage();
             packetType = "ChatPacket";
         }
-        // 2. Sprawdzamy ActionBar (komunikaty nad paskiem życia)
         else if (packet instanceof ClientboundSetActionBarTextPacket) {
             message = ((ClientboundSetActionBarTextPacket) packet).getText();
             packetType = "ActionBarPacket";
         }
 
-        // Jeśli znaleziono wiadomość w pakiecie
         if (message != null) {
             try {
                 String textForCheck = Utils.getFullText(message, false);

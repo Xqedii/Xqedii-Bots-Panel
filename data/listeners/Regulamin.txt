@@ -1,3 +1,0 @@
-[CHAT listener]:
-    [if {message} contains "regulamin!"]:
-        [gui 11]

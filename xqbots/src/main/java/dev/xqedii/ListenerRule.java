@@ -10,11 +10,9 @@ public class ListenerRule {
     private final String condition;
     private final List<String> actions;
 
-    // Pattern obsługuje fragmenty warunku: {zmienna} operator "wartosc"
     private static final Pattern CONDITION_PATTERN = Pattern.compile("(\\{\\w+})\\s+(contains|is|notcontains|isnot)\\s+\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
 
     public ListenerRule(String condition) {
-        // --- POPRAWKA: Sprawdzamy, czy condition nie jest nullem przed użyciem toLowerCase() ---
         if (condition != null && condition.toLowerCase().startsWith("if ")) {
             this.condition = condition.substring(3).trim();
         } else {
@@ -33,25 +31,20 @@ public class ListenerRule {
     }
 
     public boolean isConditionMet(Bot bot, String message, PlayerInfo playerInfo) {
-        // Jeśli warunek jest pusty (null), oznacza to regułę ogólną (bez [if]),
-        // która wykonuje się dla wiadomości systemowych (nie od graczy).
         if (condition == null || condition.isEmpty()) {
             return !playerInfo.isPlayerMsg();
         }
 
-        // --- OBSŁUGA OPERATORA && (AND) ---
         if (condition.contains("&&")) {
             String[] parts = condition.split("&&");
             for (String part : parts) {
-                // Tworzymy tymczasową regułę dla każdego kawałka i sprawdzamy
                 ListenerRule subRule = new ListenerRule(part.trim());
                 if (!subRule.isConditionMet(bot, message, playerInfo)) {
-                    return false; // Jeśli choć jeden warunek nie pasuje -> Fałsz
+                    return false;
                 }
             }
-            return true; // Wszystkie pasują
+            return true;
         }
-        // ----------------------------------
 
         Matcher matcher = CONDITION_PATTERN.matcher(condition);
         if (!matcher.find()) {
@@ -77,7 +70,6 @@ public class ListenerRule {
                 textToCompare = playerInfo.getPlayerMessage();
                 break;
 
-            // --- RZUTUJEMY NA INT ---
             case "{x}":
                 textToCompare = String.valueOf((int) bot.getX());
                 break;

@@ -90,8 +90,6 @@ public class ListenerManager {
         }
     }
 
-    // W pliku ListenerManager.java
-
     public void handleEvent(ListenerType type, Bot bot, String message, String captchaCode) {
         List<ListenerRule> rules = listeners.get(type);
         if (rules == null || rules.isEmpty()) return;
@@ -114,7 +112,6 @@ public class ListenerManager {
                     if (captchaCode != null) {
                         finalAction = finalAction.replace("{code}", captchaCode);
                     } else if (code != null) {
-                        // To obsługuje stary sposób (kod wyciągnięty regexem z czatu), jeśli captchaCode jest nullem
                         finalAction = finalAction.replace("{code}", code);
                     }
 

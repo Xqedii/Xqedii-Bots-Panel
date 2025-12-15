@@ -1,7 +1,0 @@
-[gravity off]
-[wait 2000]
-[cmd /register XqBots!@3 XqBots!@3]
-[cmd /loginXqBots!@3]
-[wait 1000]
-[log "Gravity ON!"]
-[gravity on]

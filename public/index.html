@@ -181,7 +181,6 @@
                             <label for="multi-actions-name">Multi Action name</label>
                             <input type="text" id="multi-actions-name" placeholder="Enter name">
                         </div>
-                        <!-- BOX DO TRIGGERA -->
                         <div class="form-group full-width" style="margin-bottom: 16px;">
                             <label for="multi-actions-trigger" style="font-weight: bold;">Trigger Text (Starts action when detected)</label>
                             <input type="text" id="multi-actions-trigger" placeholder="e.g. start_raid">
@@ -352,7 +351,6 @@
                                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                     <span>Map Captcha Method</span>
                                     <div class="toggle-group">
-                                        <!-- DODANO type="button" -->
                                         <button type="button" class="toggle-btn active" id="btn-mode-manual">Manual</button>
                                         <button type="button" class="toggle-btn" id="btn-mode-api">API (AI)</button>
                                     </div>
@@ -497,7 +495,6 @@
 
     </div>
   </div>
-    <!-- API Key Modal -->
     <div id="api-key-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header"><h2>OpenAI API Required</h2></div>
@@ -513,7 +510,6 @@
         </div>
     </div>
 
-    <!-- Manual Captcha Modal -->
     <div id="captcha-solve-modal" class="modal-overlay" style="z-index: 2000;">
         <div class="modal-content" style="max-width: 350px; text-align: center;">
             <div class="modal-header">
@@ -527,7 +523,7 @@
             <button id="captcha-submit-btn" class="btn btn-primary" style="width: 100%;">Send Answer</button>
         </div>
     </div>
-<!-- Modal Ustawień Zaawansowanych (ViaProxy) -->
+
   <div id="adv-settings-modal" class="modal-overlay">
       <div class="modal-content">
           <div class="modal-header">
@@ -535,7 +531,6 @@
               <button id="adv-settings-close-btn" class="modal-close-btn">×</button>
           </div>
           <div class="settings-content">
-              <!-- ViaProxy Toggle -->
               <div class="setting-item">
                   <p>ViaProxy</p>
                   <div class="toggle-group">
@@ -544,20 +539,17 @@
                   </div>
               </div>
               
-              <!-- ViaProxy Version Slider -->
               <div id="viaproxy-slider-container" style="width: 100%; display: flex; flex-direction: column; gap: 10px; opacity: 0.5; pointer-events: none; transition: opacity 0.3s; margin-top: 10px;">
                   <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-color-desc);">
                       <span>Target Version</span>
                       <span id="viaproxy-version-text" style="font-weight: bold; color: var(--text-color);">1.21.11</span>
                   </div>
-                  <!-- Max ustawimy dynamicznie w JS na podstawie długości tablicy wersji -->
                   <input type="range" id="viaproxy-slider" min="0" max="0" step="1" value="0" class="styled-slider">
               </div>
           </div>
       </div>
   </div>
 
-  <!-- Modal Konsoli ViaProxy (taki sam styl jak Velocity) -->
   <div id="viaproxy-console-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">

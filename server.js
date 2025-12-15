@@ -42,7 +42,7 @@ let velocityProcess = null;
 let intentionalVelocityStop = false;
 let activeCaptchaResponse = null;
 let viaProxyProcess = null;
-let launchLock = false; // <--- DODAJ TO
+let launchLock = false;
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
@@ -146,12 +146,10 @@ function resolveSrvToIp(data) {
     return { ip: final_ip, port: port };
 }
 
-// --- MANUAL DNS RESOLVER ---
 async function resolveManualDNS(domain) {
     let host = domain;
     let port = 25565;
     
-    // 1. Próba pobrania rekordu SRV
     try {
         const records = await dns.resolveSrv(`_minecraft._tcp.${domain}`);
         if (records.length > 0) {
@@ -159,11 +157,8 @@ async function resolveManualDNS(domain) {
             port = records[0].port;
         }
     } catch (e) {
-        // Brak SRV - to normalne dla wielu serwerów
     }
 
-    // 2. Rozwiązywanie Hostname do IP (A Record)
-    // dns.resolve4 w Node.js automatycznie podąża za CNAME
     let finalIp = host;
     try {
         const ips = await dns.resolve4(host);
@@ -179,13 +174,11 @@ async function resolveManualDNS(domain) {
 async function getMinecraftIpPort(serverAddress) {
     const url = `https://api.mcsrvstat.us/2/${serverAddress}`;
     
-    // Request (odpowiednik requests.get)
     const data = await fetchJson(url);
     
 
     let { ip, port } = resolveSrvToIp(data);
 
-    // Jeśli nie znaleziono IP przez SRV, użyj IP z API
     if (!ip) {
         ip = data.ip;
         port = data.port || 25565;
@@ -425,27 +418,23 @@ const handleActiveList = (filePath) => {
 const activeListenersHandler = handleActiveList(activeListenersPath);
 app.get('/api/active-listeners', activeListenersHandler.get);
 app.post('/api/active-listeners', activeListenersHandler.post);
-// --- CAPTCHA SYSTEM ---
 
-// Sprawdź czy klucz API jest skonfigurowany
 app.get('/api/has-api-key', (req, res) => {
     res.json({ hasKey: !!process.env.API_KEY });
 });
 
-// Weryfikuj i zapisz klucz API
 app.post('/api/save-api-key', async (req, res) => {
     const { apiKey } = req.body;
     if (!apiKey) return res.status(400).json({ success: false, message: 'No key provided' });
 
     try {
         const client = new OpenAI({ apiKey: apiKey });
-        await client.models.list(); // Test klucza
+        await client.models.list();
 
         const envPath = path.join(__dirname, '.env');
         let envContent = '';
         try { envContent = await fs.readFile(envPath, 'utf8'); } catch (e) {}
 
-        // Aktualizacja pliku .env
         const newEnvContent = envContent.replace(/^API_KEY=.*$/m, '') + `\nAPI_KEY=${apiKey}`;
         await fs.writeFile(envPath, newEnvContent.trim());
         
@@ -457,9 +446,8 @@ app.post('/api/save-api-key', async (req, res) => {
     }
 });
 
-// Endpoint dla Bota (Java) - żądanie rozwiązania
 app.post('/api/solve-captcha', async (req, res) => {
-    const { image } = req.body; // Base64
+    const { image } = req.body;
     const mode = req.body.mode || 'manual'; 
 
     if (!image) return res.status(400).send("No image");
@@ -490,16 +478,13 @@ app.post('/api/solve-captcha', async (req, res) => {
             return res.json({ code: 'ERROR_API' });
         }
     } else {
-        // MANUAL MODE
         if (activeCaptchaResponse) {
             try { activeCaptchaResponse.json({ code: 'CANCELLED' }); } catch(e) {}
         }
         activeCaptchaResponse = res;
 
-        // Wyślij do dashboardu
         broadcast({ type: 'captcha_request', image: image });
 
-        // Timeout 2 minuty
         setTimeout(() => {
             if (activeCaptchaResponse === res) {
                 try { res.json({ code: 'TIMEOUT' }); } catch(e) {}
@@ -509,13 +494,12 @@ app.post('/api/solve-captcha', async (req, res) => {
     }
 });
 
-// Endpoint dla Dashboardu - odpowiedź manualna
 app.post('/api/captcha-answer', (req, res) => {
     const { code } = req.body;
     if (activeCaptchaResponse) {
         activeCaptchaResponse.json({ code: code });
         activeCaptchaResponse = null;
-        broadcast({ type: 'captcha_solved' }); // Zamknij modal u innych
+        broadcast({ type: 'captcha_solved' });
         res.json({ success: true });
     } else {
         res.status(400).json({ success: false });
@@ -650,31 +634,24 @@ const cleanString = (str) => {
     .replace(/[^\x20-\x7EĄĆĘŁŃÓŚŹŻąćęłńóśźż]/g, ''); 
 };
 const extractMessageFromComponent = (msg) => {
-  // 1. Jeśli wiadomość to ten skomplikowany obiekt TextComponentImpl
   if (msg.includes('TextComponentImpl') || msg.includes('content=')) {
-      // Regex, który łapie WSZYSTKIE wystąpienia content="..." (flaga g)
       const regex = /content="([^"]*)"/g;
       const matches = [...msg.matchAll(regex)];
       
       if (matches.length > 0) {
-          // Łączymy wszystkie znalezione fragmenty w jedno zdanie
-          // matches[i][1] to tekst wewnątrz cudzysłowów
           let fullText = matches.map(m => m[1]).join('');
           
-          // Jeśli wynik jest pusty (bo np. same puste content=""), zwracamy oryginał
           if (!fullText.trim()) return cleanString(msg);
           
           return cleanString(fullText);
       }
   }
 
-  // 2. Obsługa kluczy tłumaczeń (np. disconnect.timeout)
   let match = msg.match(/TranslatableComponentImpl\{key="([^"]+)"[,\}]/);
   if (match) {
     return cleanString(match[1]);
   }
   
-  // 3. Zwracamy wyczyszczoną wiadomość, jeśli nie pasuje do wzorców
   return cleanString(msg);
 };
 
@@ -696,26 +673,20 @@ wss.on('connection', (ws) => {
     try {
         const data = JSON.parse(message);
         if (data.type === 'start_attack') {
-            // 1. ZABEZPIECZENIE PRZED PODWÓJNYM KLIKNIĘCIEM
             if (activeProcess || (typeof velocityProcess !== 'undefined' && velocityProcess) || (typeof viaProxyProcess !== 'undefined' && viaProxyProcess) || launchLock) {
                 ws.send(JSON.stringify({ type: 'error', message: 'Another process is already running or starting!' }));
                 return;
             }
 
-            // Zakładamy blokadę
             launchLock = true;
 
-            // Pobieramy parametry
             const { ip, amount, delay, nicksFile, actionsFile, fallCheck, version, serverCheckMethod, autoReconnect, reconnectDelay, viaProxy, viaProxyVersion } = data.params;
 
-            // --- FUNKCJA CZYSZCZĄCA KOLORY Z KONSOLI (ANSI) ---
             const stripAnsi = (str) => str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
 
-            // --- BUFORY NA LOGI ---
             let vpLogBuffer = "";
             let velLogBuffer = "";
 
-            // --- FUNKCJA STARTUJĄCA BOTY (X.JAR) ---
             const startBotProcess = async (targetIp) => {
                 try {
                     broadcast({ type: 'log', message: `Connecting bots to ${targetIp}...` });
@@ -727,13 +698,11 @@ wss.on('connection', (ws) => {
                         '--listeners', path.join(process.cwd(), 'data/listeners')
                     ];
 
-                    // Active Listeners
                     try {
                         const activeListeners = JSON.parse(await fs.readFile(activeListenersPath, 'utf-8'));
                         if (activeListeners.length > 0) args.push('--active-listeners', activeListeners.join(','));
                     } catch(e) {}
 
-                    // Active Multi Actions
                     try {
                         const activeMultiActions = JSON.parse(await fs.readFile(activeMultiActionsPath, 'utf-8'));
                         if (activeMultiActions.length > 0) {
@@ -793,7 +762,6 @@ wss.on('connection', (ws) => {
                         activeProcess = null;
                         broadcast({ type: 'status_update', isRunning: false });
                         
-                        // Zatrzymujemy pozostałe procesy
                         if (velocityProcess) { velocityProcess.kill(); velocityProcess = null; }
                         if (viaProxyProcess) { viaProxyProcess.kill(); viaProxyProcess = null; }
                     });
@@ -806,10 +774,9 @@ wss.on('connection', (ws) => {
                 }
             };
 
-            // --- FUNKCJA STARTUJĄCA VIAPROXY ---
             const startViaProxy = (targetAddress, targetVersion, onReadyCallback) => {
                 broadcast({ type: 'viaproxy_popup', status: 'open', title: `Starting ViaProxy (${targetVersion})...` });
-                vpLogBuffer = ""; // Reset bufora logów
+                vpLogBuffer = "";
 
                 (async () => {
                     try {
@@ -832,7 +799,7 @@ wss.on('connection', (ws) => {
                             const raw = d.toString();
                             const line = stripAnsi(raw);
                             
-                            vpLogBuffer += line; // ZAPIS DO BUFORA
+                            vpLogBuffer += line;
 
                             if (!line.trim()) return;
                             broadcast({ type: 'viaproxy_log', message: line.trim() });
@@ -850,14 +817,13 @@ wss.on('connection', (ws) => {
 
                         viaProxyProcess.stderr.on('data', (d) => {
                             const raw = d.toString();
-                            vpLogBuffer += raw; // ZAPIS BŁĘDÓW DO BUFORA
+                            vpLogBuffer += raw;
                             broadcast({ type: 'viaproxy_log', message: `ERR: ${stripAnsi(raw)}` });
                         });
                         
                         viaProxyProcess.on('close', (code) => {
                             broadcast({ type: 'info', message: `ViaProxy stopped (${code}).` });
                             
-                            // ZAPIS PLIKU LOGU
                             saveLogFile(vpLogsDir, 'ViaProxy', vpLogBuffer);
                             vpLogBuffer = "";
 
@@ -873,7 +839,6 @@ wss.on('connection', (ws) => {
                 })();
             };
 
-            // --- LOGIKA DLA VELOCITY (1.8-1.21.10) ---
             if (version === "1.8-1.21.10") {
                 broadcast({ type: 'velocity_popup', status: 'open', title: 'Resolving IP...' });
                 
@@ -897,10 +862,9 @@ wss.on('connection', (ws) => {
                             }
                         }
 
-                        // Funkcja odpalająca Velocity
                         const startVelocity = () => {
                             broadcast({ type: 'velocity_popup', status: 'open', title: 'Starting Velocity...' });
-                            velLogBuffer = ""; // Reset bufora
+                            velLogBuffer = "";
 
                             (async () => {
                                 try {
@@ -919,7 +883,7 @@ wss.on('connection', (ws) => {
 
                                     const vArgs = [
                                         '-Dfile.encoding=UTF-8',
-                                        '-Dvelocity.packet-decode-logging=true', // <--- WSTAW TUTAJ
+                                        '-Dvelocity.packet-decode-logging=true',
                                         '-jar', 
                                         'server.jar'
                                     ];
@@ -931,7 +895,7 @@ wss.on('connection', (ws) => {
                                         const raw = vData.toString();
                                         const line = stripAnsi(raw);
                                         
-                                        velLogBuffer += line; // ZAPIS DO BUFORA
+                                        velLogBuffer += line;
 
                                         if (!line.trim()) return;
                                         broadcast({ type: 'velocity_log', message: line.trim() });
@@ -944,10 +908,8 @@ wss.on('connection', (ws) => {
                                                 broadcast({ type: 'velocity_popup', status: 'close' });
                                                 
                                                 if (viaProxy) {
-                                                    // ViaProxy -> Velocity (Boty łączą się do ViaProxy 25568)
                                                     startBotProcess('0.0.0.0:25568');
                                                 } else {
-                                                    // Velocity Direct (Boty łączą się do Velocity 25590)
                                                     startBotProcess('0.0.0.0:25590');
                                                 }
                                             }, 1000);
@@ -956,7 +918,7 @@ wss.on('connection', (ws) => {
 
                                     velocityProcess.stderr.on('data', (vData) => {
                                         const raw = vData.toString();
-                                        velLogBuffer += raw; // ZAPIS BŁĘDÓW
+                                        velLogBuffer += raw;
                                         broadcast({ type: 'velocity_log', message: `ERR: ${stripAnsi(raw)}` });
                                     });
 
@@ -965,7 +927,6 @@ wss.on('connection', (ws) => {
                                             broadcast({ type: 'velocity_log', message: `Velocity stopped (Code: ${code}).` });
                                         }
 
-                                        // ZAPIS PLIKU LOGU
                                         saveLogFile(velLogsDir, 'Velocity', velLogBuffer);
                                         velLogBuffer = "";
 
@@ -997,18 +958,14 @@ wss.on('connection', (ws) => {
                             })();
                         };
 
-                        // --- DECYZJA O KOLEJNOŚCI STARTU (DLA VELOCITY MODE) ---
                         if (viaProxy) {
                             broadcast({ type: 'velocity_popup', status: 'close' });
                             
-                            // Najpierw ViaProxy (celuje w Velocity 25590)
                             startViaProxy('0.0.0.0:25590', viaProxyVersion, () => {
-                                // Potem Velocity (celuje w Serwer)
                                 startVelocity();
                             });
                         } else {
                             broadcast({ type: 'velocity_popup', status: 'close' });
-                            // Tylko Velocity
                             startVelocity();
                         }
 
@@ -1022,14 +979,11 @@ wss.on('connection', (ws) => {
                 return;
             }
 
-            // --- LOGIKA NORMALNA (BEZ VELOCITY) ---
             if (viaProxy) {
-                // ViaProxy -> Boty
                 startViaProxy(ip, viaProxyVersion, () => {
                     startBotProcess('0.0.0.0:25568');
                 });
             } else {
-                // Boty bezpośrednio
                 startBotProcess(ip);
             }
 

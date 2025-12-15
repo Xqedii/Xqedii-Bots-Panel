@@ -35,14 +35,14 @@ public class Main {
     private static boolean mostMinimal = false;
     private static volatile boolean isAutoSwapRunning = false;
 
-    public static int autoReconnectDelay = 0; // Domyślnie 0 = wyłączone
+    public static int autoReconnectDelay = 0;
     private static boolean useProxies = false;
     private static final ArrayList<ProxyDetails> proxies = new ArrayList<>();
     private static int proxyIndex = 0;
     private static int proxyCount = 0;
     private static ProxyInfo.Type proxyType;
 
-    public static String captchaMode = "manual"; // Domyślnie
+    public static String captchaMode = "manual";
     public static List<MultiAction> loadedMultiActions = new ArrayList<>();
     public static List<String> activeListenerFiles = new ArrayList<>();
     private static Timer timer = new Timer();
@@ -96,7 +96,6 @@ public class Main {
         options.addOption("r", "autoreconnect", true, "Auto reconnect delay (ms)");
         options.addOption(null, "listeners", true, "Path to listeners folder");
 
-        // NOWE OPCJE
         options.addOption(null, "active-listeners", true, "Comma separated list of active listener files");
         options.addOption(null, "active-multi-actions", true, "Special string for multi actions");
 
@@ -111,7 +110,6 @@ public class Main {
             System.exit(1);
         }
 
-        // Parsing Active Listeners
         if (cmd.hasOption("active-listeners")) {
             String raw = cmd.getOptionValue("active-listeners");
             activeListenerFiles = Arrays.asList(raw.split(","));
@@ -121,7 +119,6 @@ public class Main {
             captchaMode = cmd.getOptionValue("captcha-mode");
             Log.info("Captcha mode set to: " + captchaMode);
         }
-        // Parsing Multi Actions
         if (cmd.hasOption("active-multi-actions")) {
             String raw = cmd.getOptionValue("active-multi-actions");
             String[] entries = raw.split(";;;");
@@ -162,10 +159,7 @@ public class Main {
             listenerManager = new ListenerManager(listenersPath);
         }
 
-        // (Reszta obsługi proxy - bez zmian)
         if (cmd.hasOption('l') || cmd.hasOption("socks5") || cmd.hasOption("socks4")) {
-            // ... (twój dotychczasowy kod obsługi proxy) ...
-            // Skróciłem tu dla czytelności, wklej tu swój kod proxy
             String proxyPath = null;
             if (cmd.hasOption("socks5")) {
                 proxyType = ProxyInfo.Type.SOCKS5;
@@ -398,11 +392,8 @@ public class Main {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("#")) continue;
 
-                // POPRAWIONA SEKCJA OBSŁUGI WAIT / DELAY
                 if (line.startsWith("[wait") || line.startsWith("[delay")) {
                     try {
-                        // Pobiera wszystko między pierwszą spacją a ostatnim nawiasem ]
-                        // Działa dla [wait 1000] i [delay 1000]
                         int spaceIndex = line.indexOf(" ");
                         int bracketIndex = line.lastIndexOf("]");
 
@@ -413,7 +404,7 @@ public class Main {
                     } catch (Exception e) {
                         Log.warn("Invalid wait syntax in MultiAction: " + line);
                     }
-                    continue; // Przechodzimy do następnej linii po odczekaniu
+                    continue;
                 }
 
                 if (line.startsWith("[send") || line.startsWith("[chat")) {
@@ -423,14 +414,12 @@ public class Main {
                         synchronized (Main.class) {
                             if (bots.isEmpty()) break;
 
-                            // Wybierz bota (Round Robin)
                             if (currentBotIndex >= bots.size()) currentBotIndex = 0;
                             Bot sender = bots.get(currentBotIndex);
 
                             sender.sendChat(msg);
                             currentBotIndex++;
                         }
-                        // Małe opóźnienie techniczne między wysłaniem wiadomości (nie mylić z [wait])
                         Thread.sleep(50);
                     } catch(Exception e){
                         Log.error("Error executing line: " + line);
@@ -460,7 +449,6 @@ public class Main {
 
                     synchronized (Main.class) {
                         bots.add(newBot);
-                        // Jeśli włączony był headroll albo swap dla wszystkich, można to tu przywrócić
                         if (isAutoSwapRunning) newBot.startSectorSwapping();
                     }
                 } catch (Exception e) {
@@ -499,7 +487,6 @@ public class Main {
                     isAutoSwapRunning = true;
                 }
                 break;
-            // W pliku Main.java, wewnątrz metody handleCommand
 
             case "slot": {
                 if (parts.length < 2) {
@@ -626,8 +613,6 @@ public class Main {
 
                 Log.info("Ustawianie grawitacji na " + mode + " dla wszystkich botow...");
 
-                // Wykorzystujemy istniejącą w Bot.java metodę processCommand,
-                // która posiada już logikę bezpiecznego wyłączania/włączania fizyki
                 bots.forEach(bot -> {
                     try {
                         bot.processCommand("[gravity " + mode + "]");
@@ -884,7 +869,6 @@ public class Main {
             isMainListenerMissing = true;
         }
 
-        // --- ZMIANA: Nie wyłączamy programu, jeśli autoreconnect jest włączony ---
         if (bots.size() > 0) {
             if (isMainListenerMissing && !isMinimal()) {
                 Log.info("Renewing MainListener");
@@ -892,7 +876,6 @@ public class Main {
                 isMainListenerMissing = false;
             }
         } else {
-            // Wyłączamy tylko jeśli autoreconnect jest WYŁĄCZONY
             if (autoReconnectDelay <= 0 && triedToConnect == botCount) {
                 Log.error("All bots disconnected, exiting");
                 System.exit(0);

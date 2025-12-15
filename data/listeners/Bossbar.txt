@@ -1,3 +1,3 @@
 [BOSSBAR listener]:
     [if {message} contains "Left click to view more information"]:
-        [log Aternos server is down!]
+        [log Aternos server is off!]

@@ -97,20 +97,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const velocityModal = document.getElementById('velocity-modal');
     
     velocityModal.addEventListener('click', (e) => {
-        // Sprawdzamy czy kliknięto w tło
         if (e.target === velocityModal) {
             const spinner = document.getElementById('velocity-spinner');
             
-            // WARUNEK: Jeśli spinner jest widoczny (czyli trwa ładowanie/start), NIE zamykaj.
             if (spinner.style.display !== 'none') {
                 return;
             }
 
-            // Jeśli spinner jest ukryty (czyli to "Velocity Console"), zamykamy:
             velocityModal.classList.remove('modal-open');
             velocityModal.style.display = 'none';
 
-            // Reset przycisku Close -> Stop
             const stopBtn = document.getElementById('velocity-stop-btn');
             if (stopBtn && stopBtn.dataset.mode === 'close') {
                 setTimeout(() => {
@@ -124,23 +120,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (velocityStopBtn) {
         velocityStopBtn.addEventListener('click', () => {
-            // Jeśli jesteśmy w trybie podglądu (przycisk to "Close")
             if (velocityStopBtn.dataset.mode === 'close') {
                 const modal = document.getElementById('velocity-modal');
                 modal.classList.remove('modal-open');
                 modal.style.display = 'none';
                 
-                // Przywróć przycisk do stanu domyślnego po zamknięciu
                 setTimeout(() => {
                     velocityStopBtn.textContent = 'Stop';
                     velocityStopBtn.dataset.mode = 'stop';
                     velocityStopBtn.classList.add('btn-danger');
                     velocityStopBtn.classList.remove('btn-secondary');
                 }, 300);
-                return; // Nie wysyłaj komendy stop
+                return;
             }
 
-            // Standardowe zachowanie (Stop process)
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({ type: 'stop_attack' }));
             }
@@ -485,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const currentToasts = toastContainer.getElementsByClassName('toast');
         if (currentToasts.length >= 4) {
-            currentToasts[0].remove(); // Usuń najstarsze
+            currentToasts[0].remove();
         }
 
         const timeToShow = duration || notificationDuration;
@@ -493,7 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const toast = document.createElement('div');
         toast.className = 'toast';
         
-        // Nowa struktura HTML z Tytułem i Treścią
         toast.innerHTML = `
             <span class="toast-title">${title}</span>
             <span class="toast-message">${message}</span>
@@ -720,7 +712,6 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'captcha_request') {
-                // Otwórz modal z obrazkiem
                 const modal = document.getElementById('captcha-solve-modal');
                 const img = document.getElementById('captcha-img-display');
                 const input = document.getElementById('captcha-input-code');
@@ -734,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (data.type === 'captcha_solved') {
                 const modal = document.getElementById('captcha-solve-modal');
                 modal.classList.remove('modal-open');
-                modal.style.display = 'none';// ... (istniejące warunki) ...
+                modal.style.display = 'none';
             } else if (data.type === 'viaproxy_popup') {
                 const modal = document.getElementById('viaproxy-console-modal');
                 const title = document.getElementById('viaproxy-modal-title');
@@ -760,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 output.appendChild(line);
                 output.scrollTop = output.scrollHeight;
             } else if  (data.type === 'status_update') {
-                isAttackRunning = data.isRunning; // <--- AKTUALIZACJA STANU
+                isAttackRunning = data.isRunning;
                 updateAttackButton(data.isRunning);
                 if (!data.isRunning) {
                     const velModal = document.getElementById('velocity-modal');
@@ -805,10 +796,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const modal = document.getElementById('velocity-modal');
                 const title = document.getElementById('velocity-modal-title');
                 const output = document.getElementById('velocity-console-output');
-                const spinner = document.getElementById('velocity-spinner'); // <--- Pobierz element
+                const spinner = document.getElementById('velocity-spinner');
                 
                 if (data.status === 'open') {
-                    spinner.style.display = 'block'; // <--- PRZYWRÓĆ SPINNER PRZY STARCIE
+                    spinner.style.display = 'block';
                     modal.classList.add('modal-open');
                     modal.style.display = 'flex';
                     output.innerHTML = '';
@@ -993,7 +984,6 @@ attackBtn.addEventListener('click', async () => {
                 return;
             }
 
-            // --- NOWY KOD: Obsługa Proxy i Connection Throttle dla Velocity ---
             if (params.version === '1.8-1.21.10') {
                 try {
                     const res = await fetch('/api/active-proxies');
@@ -1004,7 +994,6 @@ attackBtn.addEventListener('click', async () => {
                     const isLowDelay = delayVal < 4000;
 
                     if (isProxyOn) {
-                        // SCENARIUSZ 1: Proxy włączone (trzeba wyłączyć) + ew. ostrzeżenie o delayu
                         let bodyHtml = '<p>Velocity mode requires direct connection (localhost). Proxies must be disabled.</p>';
                         
                         if (isLowDelay) {
@@ -1022,9 +1011,8 @@ attackBtn.addEventListener('click', async () => {
                             ]
                         });
 
-                        if (!userConfirmed) return; // Anuluj
+                        if (!userConfirmed) return;
 
-                        // Wyłączamy proxy
                         const headers = { 'Content-Type': 'application/json' };
                         if (proxies.SOCKS4) await fetch('/api/active-proxies', { method: 'POST', headers, body: JSON.stringify({ type: 'SOCKS4', name: proxies.SOCKS4 }) });
                         if (proxies.SOCKS5) await fetch('/api/active-proxies', { method: 'POST', headers, body: JSON.stringify({ type: 'SOCKS5', name: proxies.SOCKS5 }) });
@@ -1032,7 +1020,6 @@ attackBtn.addEventListener('click', async () => {
                         logToConsole({type: 'info', message: 'Proxies automatically disabled for Velocity mode.'});
 
                     } else if (isLowDelay) {
-                        // SCENARIUSZ 2: Proxy wyłączone, ale delay jest niski (tylko ostrzeżenie o Throttle)
                         const userConfirmed = await showCustomModal({
                             title: 'Low Delay Warning',
                             bodyHTML: `<p>You are using Velocity mode (Direct Connection).</p>
@@ -1051,7 +1038,6 @@ attackBtn.addEventListener('click', async () => {
                     console.error("Failed to check settings:", e);
                 }
             }
-            // ------------------------------------------------
 
             socket.send(JSON.stringify({ type: 'start_attack', params: params }));
         } else {
@@ -1075,7 +1061,6 @@ attackBtn.addEventListener('click', async () => {
         const typeSelect = document.getElementById(`${type}-type`); 
         const contentLabel = document.getElementById(`${type}-content-label`);
         
-        // Specyficzne dla Multi Actions
         const triggerInput = document.getElementById('multi-actions-trigger');
 
         if (type === 'nicks' && typeSelect && contentLabel && contentTextarea) {
@@ -1108,7 +1093,6 @@ attackBtn.addEventListener('click', async () => {
 
         const renderList = async () => {
             try {
-                // Pobieramy listę plików ORAZ stan aktywności (jeśli dotyczy)
                 const promises = [fetch(`/api/${type}`)];
                 
                 if (type === 'proxy' || type === 'listeners' || type === 'multi-actions') {
@@ -1151,7 +1135,6 @@ attackBtn.addEventListener('click', async () => {
                             </div>
                         `;
                     } else if (type === 'listeners' || type === 'multi-actions') {
-                        // Dla Listeners i Multi Actions używamy tablicy aktywnych nazw
                         const isActive = Array.isArray(activeData) && activeData.includes(itemName);
                         mainContentHTML = `
                             <div class="item-name-wrapper">
@@ -1182,7 +1165,6 @@ attackBtn.addEventListener('click', async () => {
                         const target = e.target;
                         const itemNameFromDataset = li.dataset.name;
 
-                        // Obsługa Proxy Toggle
                         if (target.closest('.use-proxy-btn')) {
                             try {
                                 await fetch('/api/active-proxies', {
@@ -1195,7 +1177,6 @@ attackBtn.addEventListener('click', async () => {
                             return;
                         }
 
-                        // Obsługa Listeners/MultiActions Toggle
                         if (target.closest('.status-toggle-btn')) {
                             e.stopPropagation();
                             const currentlyActive = target.closest('.status-toggle-btn').classList.contains('active');
@@ -1405,7 +1386,6 @@ attackBtn.addEventListener('click', async () => {
             }
         };
 
-        // Ustaw stan początkowy
         updateVisuals(initialState);
 
         onBtn.addEventListener('click', () => {
@@ -1427,13 +1407,11 @@ attackBtn.addEventListener('click', async () => {
     const vpContainer = document.getElementById('viaproxy-slider-container');
     const vpStopBtn = document.getElementById('viaproxy-stop-btn');
 
-    // Setup Slider
     const maxIndex = viaProxyVersions.length - 1;
     vpSlider.max = maxIndex;
     
-    // Znajdź index aktualnie wybranej wersji
     let currentIndex = viaProxyVersions.indexOf(viaProxySelectedVersion);
-    if (currentIndex === -1) currentIndex = 0; // Domyślnie najnowsza (index 0)
+    if (currentIndex === -1) currentIndex = 0;
     vpSlider.value = maxIndex - currentIndex;
     vpText.textContent = viaProxyVersions[currentIndex];
 
@@ -1448,14 +1426,12 @@ attackBtn.addEventListener('click', async () => {
     };
     updateVpUI(viaProxyEnabled);
 
-    // Toggle
     setupToggleGroup('viaproxy-on-btn', 'viaproxy-off-btn', viaProxyEnabled, (isEnabled) => {
         viaProxyEnabled = isEnabled;
         localStorage.setItem('viaProxyEnabled', isEnabled);
         updateVpUI(isEnabled);
     });
 
-    // Slider Event
     vpSlider.addEventListener('input', (e) => {
         const sliderValue = parseInt(e.target.value, 10);
         
@@ -1466,7 +1442,6 @@ attackBtn.addEventListener('click', async () => {
         localStorage.setItem('viaProxySelectedVersion', viaProxySelectedVersion);
     });
 
-    // Modal Events
     advOpenBtn.addEventListener('click', () => {
         settingsModal.classList.remove('modal-open');
         settingsModal.style.display = 'none';
@@ -1478,7 +1453,6 @@ attackBtn.addEventListener('click', async () => {
         advModal.style.display = 'none';
     });
     
-    // Stop button dla konsoli ViaProxy
     if (vpStopBtn) {
         vpStopBtn.addEventListener('click', () => {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1521,14 +1495,12 @@ attackBtn.addEventListener('click', async () => {
         const btnManual = document.getElementById('btn-mode-manual');
         const btnApi = document.getElementById('btn-mode-api');
         
-        // API Modal elements
         const apiModal = document.getElementById('api-key-modal');
         const apiKeyInput = document.getElementById('api-key-input');
         const apiKeySave = document.getElementById('api-key-save');
         const apiKeyCancel = document.getElementById('api-key-cancel');
         const apiKeyError = document.getElementById('api-key-error');
 
-        // Captcha Solve Modal elements
         const solveModal = document.getElementById('captcha-solve-modal');
         const solveImg = document.getElementById('captcha-img-display');
         const solveInput = document.getElementById('captcha-input-code');
@@ -1547,26 +1519,20 @@ attackBtn.addEventListener('click', async () => {
         };
         updateModeUI();
 
-        // Zmiana na Manual
         btnManual.addEventListener('click', () => {
             currentMode = 'manual';
             localStorage.setItem('captchaMode', 'manual');
             updateModeUI();
         });
 
-        // Zmiana na API
-// Zmiana na API
         const solveClose = document.getElementById('captcha-close-btn');
-        if (solveClose) { // Dodatkowo sprawdzamy czy przycisk istnieje
+        if (solveClose) {
             solveClose.addEventListener('click', async () => {
-                // Ukryj okno
                 solveModal.classList.remove('modal-open');
                 solveModal.style.display = 'none';
                 
-                // Wyczyść input
                 solveInput.value = '';
 
-                // Wyślij sygnał do serwera
                 try {
                     await fetch('/api/captcha-answer', {
                         method: 'POST',
@@ -1579,7 +1545,7 @@ attackBtn.addEventListener('click', async () => {
             });
         }
         btnApi.addEventListener('click', async () => {
-            console.log("Kliknięto przycisk API!"); // <--- To się powinno pojawić w konsoli F12
+            console.log("Kliknięto przycisk API!");
 
             try {
                 const res = await fetch('/api/has-api-key');
@@ -1605,7 +1571,6 @@ attackBtn.addEventListener('click', async () => {
             }
         });
 
-        // Zapisywanie klucza API
         apiKeySave.addEventListener('click', async () => {
             const key = apiKeyInput.value.trim();
             if (!key) return;
@@ -1646,7 +1611,6 @@ attackBtn.addEventListener('click', async () => {
             apiModal.style.display = 'none';
         });
 
-        // Obsługa wysyłania rozwiązania manualnego
         solveSubmit.addEventListener('click', async () => {
             const code = solveInput.value.trim();
             if (!code) return;
@@ -1662,7 +1626,6 @@ attackBtn.addEventListener('click', async () => {
             solveInput.value = '';
         });
 
-        // Obsługa Enter w inputach
         solveInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') solveSubmit.click();
         });
@@ -1687,18 +1650,15 @@ attackBtn.addEventListener('click', async () => {
             description.textContent = cmd.description;
 
             button.addEventListener('click', async () => {
-                // OBSŁUGA VELOCITY
                 if (cmd.command === 'Velocity') {
                     const velModal = document.getElementById('velocity-modal');
                     const stopBtn = document.getElementById('velocity-stop-btn');
                     const title = document.getElementById('velocity-modal-title');
                     const spinner = document.getElementById('velocity-spinner');
                     
-                    // UI: Zmień tytuł, ukryj spinner
                     title.textContent = 'Velocity Console';
-                    spinner.style.display = 'none'; // <--- Ukrywamy kółko
+                    spinner.style.display = 'none';
 
-                    // Przycisk: Tryb Close
                     stopBtn.textContent = 'Close';
                     stopBtn.dataset.mode = 'close';
                     stopBtn.classList.remove('btn-danger');
@@ -1712,11 +1672,9 @@ attackBtn.addEventListener('click', async () => {
                     return;
                 }
 
-                // ... RESZTA KODU BEZ ZMIAN (Chat, Autocrash itd.) ...
                 let fullCommand = null;
 
                 if (cmd.command === '!autocrash') {
-                    // (Zachowaj istniejący kod dla autocrash)
                     if (autoCrashInterval) {
                         clearInterval(autoCrashInterval);
                         autoCrashInterval = null;
@@ -1737,12 +1695,10 @@ attackBtn.addEventListener('click', async () => {
                 }
 
                 if (cmd.command === 'CHAT_MESSAGE') {
-                   // (Zachowaj istniejący kod)
                     const userInput = await customPrompt(cmd.inputPrompt, '', 'Send a message');
                     if (userInput === null || userInput.trim() === '') return;
                     fullCommand = userInput;
                 } else if (cmd.command === '!ascii') {
-                    // (Zachowaj istniejący kod)
                     try {
                         const response = await fetch('/api/ascii');
                         if (!response.ok) throw new Error('Could not fetch ASCII art list.');
@@ -1785,9 +1741,8 @@ attackBtn.addEventListener('click', async () => {
         });
     }
 
-    // WAŻNE: Odśwież listę przy każdym otwarciu
     openModalBtn.addEventListener('click', () => { 
-        populateActionsModal(); // <--- Dodane wywołanie tutaj
+        populateActionsModal();
         actionsModal.classList.add('modal-open');
         actionsModal.style.display = 'flex'; 
     });
@@ -1820,38 +1775,31 @@ attackBtn.addEventListener('click', async () => {
         updateChartTheme();
     };
 
-    // 1. Konfiguracja Dark Mode
     const savedTheme = localStorage.getItem('theme') || 'light';
     const isDarkInitial = savedTheme === 'dark';
     
-    // Ustawienie początkowe motywu
     setTheme(savedTheme);
 
     setupToggleGroup('dm-on-btn', 'dm-off-btn', isDarkInitial, (isDark) => {
         setTheme(isDark ? 'dark' : 'light');
     });
 
-    // 2. Konfiguracja Powiadomień
     setupToggleGroup('notif-on-btn', 'notif-off-btn', notificationsEnabled, (isEnabled) => {
         notificationsEnabled = isEnabled;
         localStorage.setItem('notificationsEnabled', notificationsEnabled);
     });
     let serverCheckMethod = localStorage.getItem('serverCheckMethod') || 'mcsrv';
 
-    // Funkcja ustawiająca wizualnie odpowiedni przycisk
     const setCheckMethodUI = (val) => {
-        // Odznaczamy wszystkie (dla pewności, choć radio robi to samo)
         const radio = document.querySelector(`input[name="server-check"][value="${val}"]`);
         if (radio) radio.checked = true;
     };
     
-    // Ustaw stan początkowy
     setCheckMethodUI(serverCheckMethod);
 
-    // Nasłuchiwanie zmian na każdym przycisku radio
     document.querySelectorAll('input[name="server-check"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            serverCheckMethod = e.target.value; // 'off', 'mcsrv' lub 'manual'
+            serverCheckMethod = e.target.value;
             localStorage.setItem('serverCheckMethod', serverCheckMethod);
         });
     });
@@ -1880,7 +1828,6 @@ attackBtn.addEventListener('click', async () => {
     const reconnectSlider = document.getElementById('reconnect-slider');
     const reconnectValueText = document.getElementById('reconnect-value-text');
 
-    // Funkcja aktualizująca UI
     const updateReconnectUI = (isEnabled) => {
         if (isEnabled) {
             reconnectSliderContainer.classList.add('active');
@@ -1889,19 +1836,16 @@ attackBtn.addEventListener('click', async () => {
         }
     };
 
-    // Inicjalizacja slidera
     reconnectSlider.value = autoReconnectDelay;
     reconnectValueText.textContent = `${autoReconnectDelay}ms`;
     updateReconnectUI(autoReconnectEnabled);
 
-    // Setup Toggle (ON/OFF)
     setupToggleGroup('reconnect-on-btn', 'reconnect-off-btn', autoReconnectEnabled, (isEnabled) => {
         autoReconnectEnabled = isEnabled;
         localStorage.setItem('autoReconnectEnabled', isEnabled);
         updateReconnectUI(isEnabled);
     });
 
-    // Slider Event
     reconnectSlider.addEventListener('input', (e) => {
         autoReconnectDelay = e.target.value;
         reconnectValueText.textContent = `${autoReconnectDelay}ms`;
