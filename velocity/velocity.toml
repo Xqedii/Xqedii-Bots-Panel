@@ -1,0 +1,88 @@
+config-version = "2.7"
+
+bind = "0.0.0.0:25590"
+
+motd = "<#f0803b>Xqedii Bots"
+
+show-max-players = 500
+
+online-mode = false
+
+force-key-authentication = true
+
+prevent-client-proxy-connections = false
+
+player-info-forwarding-mode = "NONE"
+
+forwarding-secret-file = "forwarding.secret"
+
+announce-forge = false
+
+kick-existing-players = false
+
+ping-passthrough = "all"
+
+sample-players-in-ping = false
+
+enable-player-address-logging = true
+
+[servers]
+xqbots = "162.141.71.102:25565"
+
+try = [
+    "xqbots"
+]
+
+[forced-hosts]
+
+[advanced]
+
+compression-threshold = 256
+
+compression-level = -1
+
+login-ratelimit = 0
+
+connection-timeout = 5000
+
+read-timeout = 30000
+
+haproxy-protocol = false
+
+tcp-fast-open = false
+
+bungee-plugin-message-channel = true
+
+show-ping-requests = false
+
+failover-on-unexpected-server-disconnect = true
+
+announce-proxy-commands = true
+
+log-command-executions = false
+
+log-player-connections = true
+
+accepts-transfers = false
+
+enable-reuse-port = false
+
+command-rate-limit = 9999
+
+forward-commands-if-rate-limited = true
+
+kick-after-rate-limited-commands = 0
+
+tab-complete-rate-limit = 10
+
+kick-after-rate-limited-tab-completes = 0
+
+[query]
+
+enabled = false
+
+port = 25565
+
+map = "XqBots"
+
+show-plugins = false

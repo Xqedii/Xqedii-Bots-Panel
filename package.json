@@ -11,9 +11,23 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/vision": "^5.3.4",
+    "axios": "^1.13.2",
+    "canvas": "^3.2.0",
     "chartjs-plugin-streaming": "^2.0.0",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "form-data": "^4.0.5",
+    "fs": "^0.0.1-security",
+    "https-proxy-agent": "^7.0.6",
+    "jimp": "^0.22.10",
+    "minecraft-server-util": "^5.4.4",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.10.0",
     "os-utils": "^0.0.14",
+    "sharp": "^0.34.5",
+    "socks-proxy-agent": "^8.0.5",
+    "tesseract.js": "^6.0.1",
     "ws": "^8.18.2"
   }
 }

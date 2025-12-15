@@ -1,0 +1,32 @@
+2025-12-15T03:31:07.462781800Z main WARN Advanced terminal features are not available in this environment
+[04:31:08 INFO]: Booting up Velocity 3.4.0-SNAPSHOT (git-a046f700-b557)...
+[04:31:08 INFO]: Loading localizations...
+[04:31:08 INFO]: Connections will use NIO channels, Java compression, Java ciphers
+[04:31:08 WARN]: The proxy is running in offline mode! This is a security risk and you will NOT receive any support!
+[04:31:08 WARN]: Player info forwarding is disabled! All players will appear to be connecting from the proxy and will have offline-mode UUIDs.
+[04:31:08 INFO]: Loading plugins...
+[04:31:08 INFO]: Loaded plugin viaversion 5.6.0 by _MylesC, creeper123123321, Gerrygames, kennytv, Matsv, EnZaXD, RK_01
+[04:31:08 INFO]: Loaded plugin viabackwards 5.6.0 by Matsv, kennytv, Gerrygames, creeper123123321, ForceUpdate1, EnZaXD
+[04:31:08 INFO]: Loaded 3 plugins
+[04:31:09 INFO] [viaversion]: Loading block connection mappings ...
+[04:31:09 INFO] [viaversion]: Replacing channel initializers; you can safely ignore the following two warnings.
+[04:31:09 WARN]: The server channel initializer has been replaced by java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+[04:31:09 WARN]: The backend channel initializer has been replaced by java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+[04:31:09 INFO] [viabackwards]: Loading translations...
+[04:31:09 INFO] [viabackwards]: Registering protocols...
+[04:31:10 INFO] [viaversion]: ViaVersion detected lowest supported version by the proxy: 1.7.2-1.7.5 (4)
+[04:31:10 INFO] [viaversion]: Highest supported version by the proxy: 1.21.9-1.21.10 (773)
+[04:31:10 INFO] [viaversion]: Finished mapping loading, shutting down loader executor.
+[04:31:10 INFO]: Listening on /[0:0:0:0:0:0:0:0]:25590
+[04:31:10 INFO]: Done (2,88s)!
+[04:31:12 INFO]: [connected player] XqBot_000 (/127.0.0.1:49616) has connected
+[04:31:12 INFO]: [server connection] XqBot_000 -> xqbots has connected
+[04:31:12 INFO]: [server connection] XqBot_000 -> xqbots has disconnected
+[04:31:12 ERROR]: [connected player] XqBot_000 (/127.0.0.1:49616): disconnected while connecting to xqbots: Ta wersja nie jest ju� wspierana!
+Serwer zako�czy� wsparcie dla tej wersji klienta.
+ 
+Musisz u�y� wersji 1.19.3 lub nowszej.
+[04:31:12 INFO]: [connected player] XqBot_000 (/127.0.0.1:49616) has disconnected: Nie uda�o si� po��czy� z serwerem xqbots: Ta wersja nie jest ju� wspierana!
+Serwer zako�czy� wsparcie dla tej wersji klienta.
+ 
+Musisz u�y� wersji 1.19.3 lub nowszej.

@@ -1,0 +1,21 @@
+[04:20:11] [main/INFO] (ViaProxy) Initializing ViaProxy CLI v3.4.7 (git-ViaProxy-3.4.7:bc9341f) (Injected using Launcher Agent)...
+[04:20:11] [main/INFO] (ViaProxy) Using java version: Java HotSpot(TM) 64-Bit Server VM 21.0.6 (Oracle Corporation) on Windows 11
+[04:20:11] [main/INFO] (ViaProxy) Available memory (bytes): 8568963072
+[04:20:11] [main/INFO] (ViaProxy) Working directory: C:\Users\xqedi\Documents\Workspace\XqBots — From xqedii.dev\viaproxy
+[04:20:11] [Via-Mappingloader-1/INFO] (ViaVersion) Loading block connection mappings ...
+[04:20:12] [main/INFO] (ViaBackwards) Loading translations...
+[04:20:12] [main/INFO] (ViaBackwards) Registering protocols...
+[04:20:12] [main/INFO] (ViaRewind) Registering protocols...
+[04:20:13] [main/INFO] (ViaBedrock) Started resource pack HTTP server on http://127.0.0.1:52225/
+[04:20:13] [main/INFO] (ViaVersion) ViaVersion detected lowest supported version by the proxy: 1.7.2-1.7.5 (4)
+[04:20:13] [main/INFO] (ViaVersion) Highest supported version by the proxy: 1.21.11 (774)
+[04:20:14] [main/INFO] (ViaProxy) ViaProxy started successfully!
+[04:20:14] [main/INFO] (ViaProxy) Starting proxy server
+[04:20:14] [main/INFO] (ViaProxy) Binding proxy server to 0.0.0.0:25568
+[04:20:15] [Netty NIO Server Child IO #0/INFO] (ViaProxy) [CONNECT] (127.0.0.1:52781 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:20:15] [Via Async Scheduler 0/INFO] (ViaVersion) Finished mapping loading, shutting down loader executor.
+[04:20:15] [Netty NIO Server Child IO #0/INFO] (ViaProxy) [AUTH] (127.0.0.1:52781 | Leawaim) Filling player data
+[04:20:15] [Netty NIO Client IO #0/INFO] (ViaProxy) [SESSION] (127.0.0.1:52781 | Leawaim) Connected successfully! Switching to PLAY state
+[04:20:16] [Netty NIO Server Child IO #2/INFO] (ViaProxy) [CONNECT] (127.0.0.1:58271 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:20:16] [Netty NIO Server Child IO #2/INFO] (ViaProxy) [AUTH] (127.0.0.1:58271 | XqBot_000) Filling player data
+[04:20:16] [Netty NIO Client IO #2/INFO] (ViaProxy) [SESSION] (127.0.0.1:58271 | XqBot_000) Connected successfully! Switching to PLAY state
