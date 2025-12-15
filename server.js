@@ -7,9 +7,11 @@ const fs = require('fs').promises;
 const path = require('path');
 const { spawn } = require('child_process');
 const os = require('os-utils');
+const OpenAI = require('openai');
+require('dotenv').config();
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 const dataDir = path.join(__dirname, 'data');
 const nicksDir = path.join(dataDir, 'nicks');
@@ -20,7 +22,14 @@ const asciiDir = path.join(dataDir, 'ascii');
 const killswitchDir = path.join(dataDir, 'killswitches');
 const activeProxiesPath = path.join(dataDir, 'active_proxies.json');
 const activeKillSwitches = new Set();
+const multiActionsDir = path.join(dataDir, 'multi-actions');
+const activeListenersPath = path.join(dataDir, 'active_listeners.json');
+const activeMultiActionsPath = path.join(dataDir, 'active_multiactions.json');
+const logsDir = path.join(__dirname, 'logs');
+const vpLogsDir = path.join(logsDir, 'viaproxy');
+const velLogsDir = path.join(logsDir, 'velocity');
 
+fs.mkdir(multiActionsDir, { recursive: true });
 fs.mkdir(nicksDir, { recursive: true });
 fs.mkdir(actionsDir, { recursive: true });
 fs.mkdir(listenersDir, { recursive: true });
@@ -31,8 +40,12 @@ fs.mkdir(killswitchDir, { recursive: true });
 let activeProcess = null;
 let velocityProcess = null;
 let intentionalVelocityStop = false;
+let activeCaptchaResponse = null;
+let viaProxyProcess = null;
+let launchLock = false; // <--- DODAJ TO
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(express.static('public'));
 
 const broadcast = (data) => {
@@ -44,8 +57,37 @@ const broadcast = (data) => {
   });
 };
 
+(async () => {
+    try {
+        await fs.mkdir(vpLogsDir, { recursive: true });
+        await fs.mkdir(velLogsDir, { recursive: true });
+    } catch (e) {
+        console.error('Could not create log directories:', e);
+    }
+})();
+
+const saveLogFile = async (dir, prefix, content) => {
+    if (!content || content.trim().length === 0) return;
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
+    const filename = `${prefix}_${timestamp}.txt`;
+    try {
+        await fs.writeFile(path.join(dir, filename), content);
+    } catch (e) {
+        console.error(`Failed to save log ${filename}:`, e);
+    }
+};
+
+
 const getDirForType = (type) => {
-    const dirs = { nicks: nicksDir, actions: actionsDir, listeners: listenersDir, proxy: proxyDir, ascii: asciiDir };
+    const dirs = { 
+        nicks: nicksDir, 
+        actions: actionsDir, 
+        listeners: listenersDir, 
+        proxy: proxyDir, 
+        ascii: asciiDir, 
+        'multi-actions': multiActionsDir
+    };
     return dirs[type];
 };
 
@@ -104,10 +146,12 @@ function resolveSrvToIp(data) {
     return { ip: final_ip, port: port };
 }
 
+// --- MANUAL DNS RESOLVER ---
 async function resolveManualDNS(domain) {
     let host = domain;
     let port = 25565;
     
+    // 1. Próba pobrania rekordu SRV
     try {
         const records = await dns.resolveSrv(`_minecraft._tcp.${domain}`);
         if (records.length > 0) {
@@ -115,8 +159,11 @@ async function resolveManualDNS(domain) {
             port = records[0].port;
         }
     } catch (e) {
+        // Brak SRV - to normalne dla wielu serwerów
     }
 
+    // 2. Rozwiązywanie Hostname do IP (A Record)
+    // dns.resolve4 w Node.js automatycznie podąża za CNAME
     let finalIp = host;
     try {
         const ips = await dns.resolve4(host);
@@ -132,11 +179,13 @@ async function resolveManualDNS(domain) {
 async function getMinecraftIpPort(serverAddress) {
     const url = `https://api.mcsrvstat.us/2/${serverAddress}`;
     
+    // Request (odpowiednik requests.get)
     const data = await fetchJson(url);
     
 
     let { ip, port } = resolveSrvToIp(data);
 
+    // Jeśli nie znaleziono IP przez SRV, użyj IP z API
     if (!ip) {
         ip = data.ip;
         port = data.port || 25565;
@@ -222,6 +271,13 @@ const getContent = (dir, type) => async (req, res) => {
             } else {
                 responseData.content = await fs.readFile(filePath, 'utf-8');
             }
+        } else if (type === 'multi-actions') {
+            responseData.content = await fs.readFile(filePath, 'utf-8');
+            const metaPath = path.join(dir, `${fileName}.json`);
+            try {
+                const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+                responseData.trigger = meta.trigger || '';
+            } catch(e) { responseData.trigger = ''; }
         } else {
             responseData.content = await fs.readFile(filePath, 'utf-8');
         }
@@ -269,6 +325,10 @@ const saveContent = (dir, type) => async (req, res) => {
                 const metaPath = path.join(dir, `${fileName}.json`);
                 await fs.writeFile(metaPath, JSON.stringify({ type: req.body.type }));
             }
+        } else if (type === 'multi-actions') {
+            await fs.writeFile(filePath, content);
+            const metaPath = path.join(dir, `${fileName}.json`);
+            await fs.writeFile(metaPath, JSON.stringify({ trigger: req.body.trigger || '' }));
         } else {
              await fs.writeFile(filePath, content);
         }
@@ -330,6 +390,140 @@ const renameContent = (dir, type) => async (req, res) => {
         res.status(500).send('Error renaming file.');
     }
 };
+const handleActiveList = (filePath) => {
+    return {
+        get: async (req, res) => {
+            try {
+                const data = await fs.readFile(filePath, 'utf-8');
+                res.json(JSON.parse(data));
+            } catch (e) { res.json([]); }
+        },
+        post: async (req, res) => {
+            const { name, enabled } = req.body;
+            let list = [];
+            try {
+                list = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+            } catch (e) {}
+
+            if (enabled) {
+                if (!list.includes(name)) list.push(name);
+            } else {
+                list = list.filter(item => item !== name);
+            }
+
+            try {
+                await fs.writeFile(filePath, JSON.stringify(list));
+                broadcast({ type: 'lists_updated' });
+                res.sendStatus(200);
+            } catch (e) {
+                res.status(500).send("Error saving list");
+            }
+        }
+    };
+};
+
+const activeListenersHandler = handleActiveList(activeListenersPath);
+app.get('/api/active-listeners', activeListenersHandler.get);
+app.post('/api/active-listeners', activeListenersHandler.post);
+// --- CAPTCHA SYSTEM ---
+
+// Sprawdź czy klucz API jest skonfigurowany
+app.get('/api/has-api-key', (req, res) => {
+    res.json({ hasKey: !!process.env.API_KEY });
+});
+
+// Weryfikuj i zapisz klucz API
+app.post('/api/save-api-key', async (req, res) => {
+    const { apiKey } = req.body;
+    if (!apiKey) return res.status(400).json({ success: false, message: 'No key provided' });
+
+    try {
+        const client = new OpenAI({ apiKey: apiKey });
+        await client.models.list(); // Test klucza
+
+        const envPath = path.join(__dirname, '.env');
+        let envContent = '';
+        try { envContent = await fs.readFile(envPath, 'utf8'); } catch (e) {}
+
+        // Aktualizacja pliku .env
+        const newEnvContent = envContent.replace(/^API_KEY=.*$/m, '') + `\nAPI_KEY=${apiKey}`;
+        await fs.writeFile(envPath, newEnvContent.trim());
+        
+        process.env.API_KEY = apiKey;
+        res.json({ success: true });
+    } catch (error) {
+        console.error("API Key Error:", error);
+        res.status(401).json({ success: false, message: 'Invalid API Key' });
+    }
+});
+
+// Endpoint dla Bota (Java) - żądanie rozwiązania
+app.post('/api/solve-captcha', async (req, res) => {
+    const { image } = req.body; // Base64
+    const mode = req.body.mode || 'manual'; 
+
+    if (!image) return res.status(400).send("No image");
+
+    if (mode === 'api') {
+        if (!process.env.API_KEY) return res.status(500).json({ code: 'ERROR_NO_API' });
+
+        try {
+            const client = new OpenAI({ apiKey: process.env.API_KEY });
+            const response = await client.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "Read the exact text/numbers shown in this Minecraft map captcha. Return ONLY the code." },
+                            { type: "image_url", image_url: { url: `data:image/png;base64,${image}` } }
+                        ]
+                    }
+                ],
+                max_tokens: 15
+            });
+            const code = response.choices[0].message.content.trim();
+            console.log(`[CAPTCHA] API Solved: ${code}`);
+            return res.json({ code: code });
+        } catch (e) {
+            console.error(e);
+            return res.json({ code: 'ERROR_API' });
+        }
+    } else {
+        // MANUAL MODE
+        if (activeCaptchaResponse) {
+            try { activeCaptchaResponse.json({ code: 'CANCELLED' }); } catch(e) {}
+        }
+        activeCaptchaResponse = res;
+
+        // Wyślij do dashboardu
+        broadcast({ type: 'captcha_request', image: image });
+
+        // Timeout 2 minuty
+        setTimeout(() => {
+            if (activeCaptchaResponse === res) {
+                try { res.json({ code: 'TIMEOUT' }); } catch(e) {}
+                activeCaptchaResponse = null;
+            }
+        }, 120000);
+    }
+});
+
+// Endpoint dla Dashboardu - odpowiedź manualna
+app.post('/api/captcha-answer', (req, res) => {
+    const { code } = req.body;
+    if (activeCaptchaResponse) {
+        activeCaptchaResponse.json({ code: code });
+        activeCaptchaResponse = null;
+        broadcast({ type: 'captcha_solved' }); // Zamknij modal u innych
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false });
+    }
+});
+const activeMultiHandler = handleActiveList(activeMultiActionsPath);
+app.get('/api/active-multi-actions', activeMultiHandler.get);
+app.post('/api/active-multi-actions', activeMultiHandler.post);
 
 const createRoutesForType = (type) => {
     const dir = getDirForType(type);
@@ -447,7 +641,7 @@ app.delete('/api/killswitches/:id', async (req, res) => {
     }
 });
 
-['nicks', 'proxy', 'listeners', 'actions', 'ascii'].forEach(createRoutesForType);
+['nicks', 'proxy', 'listeners', 'actions', 'ascii', 'multi-actions'].forEach(createRoutesForType);
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/api/' });
@@ -456,24 +650,31 @@ const cleanString = (str) => {
     .replace(/[^\x20-\x7EĄĆĘŁŃÓŚŹŻąćęłńóśźż]/g, ''); 
 };
 const extractMessageFromComponent = (msg) => {
+  // 1. Jeśli wiadomość to ten skomplikowany obiekt TextComponentImpl
   if (msg.includes('TextComponentImpl') || msg.includes('content=')) {
+      // Regex, który łapie WSZYSTKIE wystąpienia content="..." (flaga g)
       const regex = /content="([^"]*)"/g;
       const matches = [...msg.matchAll(regex)];
       
       if (matches.length > 0) {
+          // Łączymy wszystkie znalezione fragmenty w jedno zdanie
+          // matches[i][1] to tekst wewnątrz cudzysłowów
           let fullText = matches.map(m => m[1]).join('');
           
+          // Jeśli wynik jest pusty (bo np. same puste content=""), zwracamy oryginał
           if (!fullText.trim()) return cleanString(msg);
           
           return cleanString(fullText);
       }
   }
 
+  // 2. Obsługa kluczy tłumaczeń (np. disconnect.timeout)
   let match = msg.match(/TranslatableComponentImpl\{key="([^"]+)"[,\}]/);
   if (match) {
     return cleanString(match[1]);
   }
   
+  // 3. Zwracamy wyczyszczoną wiadomość, jeśli nie pasuje do wzorców
   return cleanString(msg);
 };
 
@@ -495,197 +696,341 @@ wss.on('connection', (ws) => {
     try {
         const data = JSON.parse(message);
         if (data.type === 'start_attack') {
-            if (activeProcess || (typeof velocityProcess !== 'undefined' && velocityProcess)) {
-                ws.send(JSON.stringify({ type: 'error', message: 'Another process is already running!' }));
+            // 1. ZABEZPIECZENIE PRZED PODWÓJNYM KLIKNIĘCIEM
+            if (activeProcess || (typeof velocityProcess !== 'undefined' && velocityProcess) || (typeof viaProxyProcess !== 'undefined' && viaProxyProcess) || launchLock) {
+                ws.send(JSON.stringify({ type: 'error', message: 'Another process is already running or starting!' }));
                 return;
             }
 
-            const { ip, amount, delay, nicksFile, actionsFile, fallCheck, version, serverCheckMethod, autoReconnect, reconnectDelay } = data.params;
+            // Zakładamy blokadę
+            launchLock = true;
 
-            if (version === "1.8-1.21.10") {
-                broadcast({ type: 'velocity_popup', status: 'open', title: 'Preparing connection...' });
+            // Pobieramy parametry
+            const { ip, amount, delay, nicksFile, actionsFile, fallCheck, version, serverCheckMethod, autoReconnect, reconnectDelay, viaProxy, viaProxyVersion } = data.params;
+
+            // --- FUNKCJA CZYSZCZĄCA KOLORY Z KONSOLI (ANSI) ---
+            const stripAnsi = (str) => str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+
+            // --- BUFORY NA LOGI ---
+            let vpLogBuffer = "";
+            let velLogBuffer = "";
+
+            // --- FUNKCJA STARTUJĄCA BOTY (X.JAR) ---
+            const startBotProcess = async (targetIp) => {
+                try {
+                    broadcast({ type: 'log', message: `Connecting bots to ${targetIp}...` });
+                    
+                    const args = [
+                        '-Dfile.encoding=UTF-8',
+                        '-jar', 'X.jar', '-s', targetIp, '-c', amount,
+                        '-d', delay, (parseInt(delay, 10) + 200).toString(),
+                        '--listeners', path.join(process.cwd(), 'data/listeners')
+                    ];
+
+                    // Active Listeners
+                    try {
+                        const activeListeners = JSON.parse(await fs.readFile(activeListenersPath, 'utf-8'));
+                        if (activeListeners.length > 0) args.push('--active-listeners', activeListeners.join(','));
+                    } catch(e) {}
+
+                    // Active Multi Actions
+                    try {
+                        const activeMultiActions = JSON.parse(await fs.readFile(activeMultiActionsPath, 'utf-8'));
+                        if (activeMultiActions.length > 0) {
+                            const multiArgs = [];
+                            for (const name of activeMultiActions) {
+                                try {
+                                    const meta = JSON.parse(await fs.readFile(path.join(multiActionsDir, `${name}.json`), 'utf-8'));
+                                    if (meta.trigger) multiArgs.push(`${path.join(multiActionsDir, `${name}.txt`)}|${meta.trigger}`);
+                                } catch(e) {}
+                            }
+                            if (multiArgs.length > 0) args.push('--active-multi-actions', multiArgs.join(';;;'));
+                        }
+                    } catch(e) {}
+
+                    if (autoReconnect && reconnectDelay) args.push('-r', reconnectDelay.toString());
+
+                    if (nicksFile) {
+                        try {
+                            const meta = JSON.parse(await fs.readFile(path.join(nicksDir, `${path.basename(nicksFile)}.json`), 'utf-8'));
+                            if (meta.type === 'generator') args.push('--nick-base', meta.base);
+                            else args.push('--nicks', path.join(nicksDir, `${path.basename(nicksFile)}.txt`));
+                        } catch(e) {
+                            args.push('--nicks', path.join(nicksDir, `${path.basename(nicksFile)}.txt`));
+                        }
+                    }
+
+                    if (actionsFile) args.push('--actions', path.join(actionsDir, `${path.basename(actionsFile)}.txt`));
+
+                    try {
+                        const activeProxies = JSON.parse(await fs.readFile(activeProxiesPath, 'utf-8'));
+                        if (activeProxies.SOCKS4) args.push('--socks4', path.join(proxyDir, `${path.basename(activeProxies.SOCKS4)}.txt`));
+                        if (activeProxies.SOCKS5) args.push('--socks5', path.join(proxyDir, `${path.basename(activeProxies.SOCKS5)}.txt`));
+                    } catch(e) {}
+                    
+                    const child = spawn('java', args);
+                    activeProcess = child;
+                    
+                    broadcast({ type: 'status_update', isRunning: true, ip: targetIp, amount: amount });
+
+                    const cleanMessage = (line) => line.replace(/^(IMP|INFO|CHAT|T|WARN|ERROR)\s*\|\s*/i, '').trim();
+                    const processOutput = (data, msgType) => {
+                        const lines = data.toString().split('\n');
+                        for (const line of lines) {
+                            if (!line.trim()) continue;
+                            const finalType = line.includes('IMP |') ? 'important' : msgType;
+                            let msg = cleanMessage(line);
+                            msg = extractMessageFromComponent(msg); 
+                            if (msg) broadcast({ type: finalType, message: msg });
+                        }
+                    };
+
+                    child.stdout.on('data', (d) => processOutput(d, 'log'));
+                    child.stderr.on('data', (d) => processOutput(d, 'error'));
+                    
+                    child.on('close', (code) => {
+                        broadcast({ type: 'info', message: `Bots process finished: ${code || 'Stop'}` });
+                        activeProcess = null;
+                        broadcast({ type: 'status_update', isRunning: false });
+                        
+                        // Zatrzymujemy pozostałe procesy
+                        if (velocityProcess) { velocityProcess.kill(); velocityProcess = null; }
+                        if (viaProxyProcess) { viaProxyProcess.kill(); viaProxyProcess = null; }
+                    });
+
+                } catch (err) {
+                    console.error("Start Error:", err);
+                    broadcast({ type: 'error', message: `Failed to start bots: ${err.message}` });
+                } finally {
+                    launchLock = false; 
+                }
+            };
+
+            // --- FUNKCJA STARTUJĄCA VIAPROXY ---
+            const startViaProxy = (targetAddress, targetVersion, onReadyCallback) => {
+                broadcast({ type: 'viaproxy_popup', status: 'open', title: `Starting ViaProxy (${targetVersion})...` });
+                vpLogBuffer = ""; // Reset bufora logów
 
                 (async () => {
                     try {
-                        let targetAddress;
+                        const vpPath = path.join(__dirname, 'viaproxy');
+                        const configPath = path.join(vpPath, 'viaproxy.yml');
 
+                        let config = await fs.readFile(configPath, 'utf-8');
+                        config = config.replace(/^target-address:.*$/m, `target-address: ${targetAddress}`);
+                        config = config.replace(/^target-version:.*$/m, `target-version: ${targetVersion}`);
+                        await fs.writeFile(configPath, config);
+                        
+                        broadcast({ type: 'viaproxy_log', message: `Configured ViaProxy: Target=${targetAddress}` });
+
+                        const vpArgs = ['-Dfile.encoding=UTF-8', '-jar', 'ViaProxy.jar', 'config', 'viaproxy.yml'];
+                        viaProxyProcess = spawn('java', vpArgs, { cwd: vpPath });
+
+                        let isReady = false;
+
+                        viaProxyProcess.stdout.on('data', (d) => {
+                            const raw = d.toString();
+                            const line = stripAnsi(raw);
+                            
+                            vpLogBuffer += line; // ZAPIS DO BUFORA
+
+                            if (!line.trim()) return;
+                            broadcast({ type: 'viaproxy_log', message: line.trim() });
+                            
+                            if (!isReady && line.includes('Binding proxy server to')) {
+                                isReady = true;
+                                broadcast({ type: 'viaproxy_log', message: 'ViaProxy is ready!' });
+                                
+                                setTimeout(() => {
+                                    broadcast({ type: 'viaproxy_popup', status: 'close' });
+                                    onReadyCallback();
+                                }, 1000);
+                            }
+                        });
+
+                        viaProxyProcess.stderr.on('data', (d) => {
+                            const raw = d.toString();
+                            vpLogBuffer += raw; // ZAPIS BŁĘDÓW DO BUFORA
+                            broadcast({ type: 'viaproxy_log', message: `ERR: ${stripAnsi(raw)}` });
+                        });
+                        
+                        viaProxyProcess.on('close', (code) => {
+                            broadcast({ type: 'info', message: `ViaProxy stopped (${code}).` });
+                            
+                            // ZAPIS PLIKU LOGU
+                            saveLogFile(vpLogsDir, 'ViaProxy', vpLogBuffer);
+                            vpLogBuffer = "";
+
+                            viaProxyProcess = null;
+                            if (activeProcess) { activeProcess.kill(); activeProcess = null; broadcast({ type: 'status_update', isRunning: false }); }
+                        });
+
+                    } catch (e) {
+                        broadcast({ type: 'error', message: `ViaProxy Error: ${e.message}` });
+                        broadcast({ type: 'viaproxy_popup', status: 'close' });
+                        launchLock = false;
+                    }
+                })();
+            };
+
+            // --- LOGIKA DLA VELOCITY (1.8-1.21.10) ---
+            if (version === "1.8-1.21.10") {
+                broadcast({ type: 'velocity_popup', status: 'open', title: 'Resolving IP...' });
+                
+                (async () => {
+                    try {
+                        let realTargetAddress; 
                         const inputParts = ip.split(':');
                         const hostPart = inputParts[0].toLowerCase();
                         const portPart = inputParts[1] || '25565';
                         const localAddresses = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
 
                         if (localAddresses.includes(hostPart)) {
-                            broadcast({ type: 'velocity_log', message: `Localhost detected (${hostPart}). Skipping checks.` });
-                            targetAddress = `${hostPart}:${portPart}`;
+                            realTargetAddress = `${hostPart}:${portPart}`;
                         } else {
                             if (serverCheckMethod === 'off') {
-                                broadcast({ type: 'velocity_log', message: `Check Mode: OFF (Using input directly)` });
-                                targetAddress = ip;
-                            
+                                realTargetAddress = ip;
                             } else if (serverCheckMethod === 'manual') {
-                                broadcast({ type: 'velocity_log', message: `Check Mode: DNS (Local Resolver)` });
-                                broadcast({ type: 'velocity_log', message: `Resolving DNS for: ${inputParts[0]}...` });
-                                
-                                targetAddress = await resolveManualDNS(inputParts[0]);
-                                
-                                broadcast({ type: 'velocity_log', message: `Resolved IP: ${targetAddress}` });
-
+                                realTargetAddress = await resolveManualDNS(inputParts[0]);
                             } else {
-                                broadcast({ type: 'velocity_log', message: `Check Mode: API (mcsrvstat.us)` });
-                                broadcast({ type: 'velocity_log', message: `Resolving DNS for: ${ip}...` });
-                                
-                                targetAddress = await getMinecraftIpPort(ip);
-                                
-                                broadcast({ type: 'velocity_log', message: `Resolved IP: ${targetAddress}` });
+                                realTargetAddress = await getMinecraftIpPort(ip);
                             }
                         }
 
-                        const velocityPath = path.join(__dirname, 'velocity');
-                        const tomlPath = path.join(velocityPath, 'velocity.toml');
+                        // Funkcja odpalająca Velocity
+                        const startVelocity = () => {
+                            broadcast({ type: 'velocity_popup', status: 'open', title: 'Starting Velocity...' });
+                            velLogBuffer = ""; // Reset bufora
 
-                        let tomlContent = await fs.readFile(tomlPath, 'utf-8');
-                        
-                        const regex = /^xqbots\s*=\s*".*?"/m;
-                        
-                        if (regex.test(tomlContent)) {
-                            tomlContent = tomlContent.replace(regex, `xqbots = "${targetAddress}"`);
+                            (async () => {
+                                try {
+                                    const velocityPath = path.join(__dirname, 'velocity');
+                                    const tomlPath = path.join(velocityPath, 'velocity.toml');
+
+                                    let tomlContent = await fs.readFile(tomlPath, 'utf-8');
+                                    const regex = /^xqbots\s*=\s*".*?"/m;
+                                    if (regex.test(tomlContent)) {
+                                        tomlContent = tomlContent.replace(regex, `xqbots = "${realTargetAddress}"`);
+                                    } else {
+                                        tomlContent += `\nxqbots = "${realTargetAddress}"`;
+                                    }
+                                    await fs.writeFile(tomlPath, tomlContent);
+                                    broadcast({ type: 'velocity_log', message: `Velocity Config: Target set to ${realTargetAddress}` });
+
+                                    const vArgs = [
+                                        '-Dfile.encoding=UTF-8',
+                                        '-Dvelocity.packet-decode-logging=true', // <--- WSTAW TUTAJ
+                                        '-jar', 
+                                        'server.jar'
+                                    ];
+                                    velocityProcess = spawn('java', vArgs, { cwd: velocityPath });
+
+                                    let isReady = false;
+
+                                    velocityProcess.stdout.on('data', (vData) => {
+                                        const raw = vData.toString();
+                                        const line = stripAnsi(raw);
+                                        
+                                        velLogBuffer += line; // ZAPIS DO BUFORA
+
+                                        if (!line.trim()) return;
+                                        broadcast({ type: 'velocity_log', message: line.trim() });
+
+                                        if (!isReady && (line.includes('Done (') || line.includes('Listening on /'))) {
+                                            isReady = true;
+                                            broadcast({ type: 'velocity_log', message: 'Velocity is ready!' });
+                                            
+                                            setTimeout(() => {
+                                                broadcast({ type: 'velocity_popup', status: 'close' });
+                                                
+                                                if (viaProxy) {
+                                                    // ViaProxy -> Velocity (Boty łączą się do ViaProxy 25568)
+                                                    startBotProcess('0.0.0.0:25568');
+                                                } else {
+                                                    // Velocity Direct (Boty łączą się do Velocity 25590)
+                                                    startBotProcess('0.0.0.0:25590');
+                                                }
+                                            }, 1000);
+                                        }
+                                    });
+
+                                    velocityProcess.stderr.on('data', (vData) => {
+                                        const raw = vData.toString();
+                                        velLogBuffer += raw; // ZAPIS BŁĘDÓW
+                                        broadcast({ type: 'velocity_log', message: `ERR: ${stripAnsi(raw)}` });
+                                    });
+
+                                    velocityProcess.on('close', (code) => {
+                                        if (!intentionalVelocityStop) {
+                                            broadcast({ type: 'velocity_log', message: `Velocity stopped (Code: ${code}).` });
+                                        }
+
+                                        // ZAPIS PLIKU LOGU
+                                        saveLogFile(velLogsDir, 'Velocity', velLogBuffer);
+                                        velLogBuffer = "";
+
+                                        velocityProcess = null;
+                                        intentionalVelocityStop = false; 
+
+                                        if (activeProcess) {
+                                            activeProcess.kill();
+                                            activeProcess = null;
+                                            broadcast({ type: 'status_update', isRunning: false });
+                                        }
+                                        if (viaProxyProcess) { viaProxyProcess.kill(); viaProxyProcess = null; }
+                                    });
+
+                                } catch (e) {
+                                    const msg = e.message.toLowerCase();
+                                    if (msg.includes('http') || msg.includes('api') || msg.includes('json')) {
+                                        velocityProcess = null;
+                                        setTimeout(() => {
+                                            broadcast({ type: 'velocity_popup', status: 'close' });
+                                            broadcast({ type: 'velocity_scan_error', message: e.message });
+                                        }, 100); 
+                                    } else {
+                                        broadcast({ type: 'error', message: e.message });
+                                        velocityProcess = null;
+                                    }
+                                    launchLock = false;
+                                }
+                            })();
+                        };
+
+                        // --- DECYZJA O KOLEJNOŚCI STARTU (DLA VELOCITY MODE) ---
+                        if (viaProxy) {
+                            broadcast({ type: 'velocity_popup', status: 'close' });
+                            
+                            // Najpierw ViaProxy (celuje w Velocity 25590)
+                            startViaProxy('0.0.0.0:25590', viaProxyVersion, () => {
+                                // Potem Velocity (celuje w Serwer)
+                                startVelocity();
+                            });
                         } else {
-                            tomlContent += `\nxqbots = "${targetAddress}"`;
+                            broadcast({ type: 'velocity_popup', status: 'close' });
+                            // Tylko Velocity
+                            startVelocity();
                         }
-                        
-                        await fs.writeFile(tomlPath, tomlContent);
-                        broadcast({ type: 'velocity_log', message: `Config updated. Target set to ${targetAddress}` });
-
-                        broadcast({ type: 'velocity_popup', title: 'Starting Velocity...' });
-                        
-                        const vArgs = ['-Dfile.encoding=UTF-8', '-jar', 'server.jar'];
-                        velocityProcess = spawn('java', vArgs, { cwd: velocityPath });
-
-                        let isReady = false;
-
-                        velocityProcess.stdout.on('data', (vData) => {
-                            const line = vData.toString();
-                            broadcast({ type: 'velocity_log', message: line.trim() });
-
-                            if (!isReady && (line.includes('Done (') || line.includes('Listening on /'))) {
-                                isReady = true;
-                                broadcast({ type: 'velocity_log', message: 'Velocity is ready!' });
-                                
-                                setTimeout(() => {
-                                    broadcast({ type: 'velocity_popup', status: 'close' });
-                                    startBotProcess('0.0.0.0:25590');
-                                }, 500);
-                            }
-                        });
-
-                        velocityProcess.stderr.on('data', (vData) => {
-                            broadcast({ type: 'velocity_log', message: `ERR: ${vData.toString()}` });
-                        });
-
-                        velocityProcess.on('close', (code) => {
-                            if (!intentionalVelocityStop) {
-                                broadcast({ type: 'velocity_log', message: `Velocity stopped (Code: ${code}).` });
-                            }
-                            velocityProcess = null;
-                            intentionalVelocityStop = false; 
-
-                            if (activeProcess) {
-                                activeProcess.kill();
-                                activeProcess = null;
-                                broadcast({ type: 'status_update', isRunning: false });
-                            }
-                        });
 
                     } catch (e) {
-                        broadcast({ type: 'velocity_log', message: `CRITICAL ERROR: ${e.message}` });
-                        
-                        const msg = e.message.toLowerCase();
-                        if (msg.includes('http') || msg.includes('api') || msg.includes('json') || msg.includes('500') || msg.includes('404')) {
-                            
-                            velocityProcess = null;
-                            
-                            setTimeout(() => {
-                                broadcast({ type: 'velocity_popup', status: 'close' });
-                                broadcast({ 
-                                    type: 'velocity_scan_error',
-                                    message: e.message
-                                });
-                            }, 100); 
-                            
-                        } else {
-                            broadcast({ type: 'error', message: e.message });
-                            velocityProcess = null;
-                        }
+                         broadcast({ type: 'error', message: `Resolution Error: ${e.message}` });
+                         broadcast({ type: 'velocity_popup', status: 'close' });
+                         launchLock = false;
                     }
                 })();
                 
                 return;
             }
 
-            startBotProcess(ip);
-
-            async function startBotProcess(targetIp) {
-                broadcast({ type: 'log', message: `Connecting bots to ${targetIp}...` });
-                
-                const args = [
-                    '-Dfile.encoding=UTF-8',
-                    '-jar', 'X.jar', '-s', targetIp, '-c', amount,
-                    '-d', delay, (parseInt(delay, 10) + 200).toString(),
-                    '--listeners', path.join(process.cwd(), 'data/listeners')
-                ];
-
-                if (autoReconnect && reconnectDelay) {
-                    args.push('-r', reconnectDelay.toString());
-                }
-                if (nicksFile) {
-                    try {
-                        const metaPath = path.join(nicksDir, `${path.basename(nicksFile)}.json`);
-                        const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
-                        if (meta.type === 'generator') args.push('--nick-base', meta.base);
-                        else args.push('--nicks', path.join(nicksDir, `${path.basename(nicksFile)}.txt`));
-                    } catch(e) {
-                         args.push('--nicks', path.join(nicksDir, `${path.basename(nicksFile)}.txt`));
-                    }
-                }
-
-                if (actionsFile) args.push('--actions', path.join(actionsDir, `${path.basename(actionsFile)}.txt`));
-
-                try {
-                    const activeProxies = JSON.parse(await fs.readFile(activeProxiesPath, 'utf-8'));
-                    if (activeProxies.SOCKS4) args.push('--socks4', path.join(proxyDir, `${path.basename(activeProxies.SOCKS4)}.txt`));
-                    if (activeProxies.SOCKS5) args.push('--socks5', path.join(proxyDir, `${path.basename(activeProxies.SOCKS5)}.txt`));
-                } catch(e) {}
-                console.log(args);
-                const child = spawn('java', args);
-                activeProcess = child;
-                broadcast({ type: 'status_update', isRunning: true, ip: targetIp, amount: amount });
-
-                const cleanMessage = (line) => line.replace(/^(IMP|INFO|CHAT|T|WARN|ERROR)\s*\|\s*/i, '').trim();
-                
-                const processOutput = (data, msgType) => {
-                    const lines = data.toString().split('\n');
-                    for (const line of lines) {
-                        if (!line.trim()) continue;
-                        const finalType = line.includes('IMP |') ? 'important' : msgType;
-                        let msg = cleanMessage(line);
-                        msg = extractMessageFromComponent(msg); 
-                        if (msg) broadcast({ type: finalType, message: msg });
-                    }
-                };
-
-                child.stdout.on('data', (d) => processOutput(d, 'log'));
-                child.stderr.on('data', (d) => processOutput(d, 'error'));
-                
-                child.on('close', (code) => {
-                    broadcast({ type: 'info', message: `Bots process finished: ${code || 'Stop'}` });
-                    activeProcess = null;
-                    broadcast({ type: 'status_update', isRunning: false });
-                    
-                    if (velocityProcess) {
-                        velocityProcess.kill();
-                        velocityProcess = null;
-                    }
+            // --- LOGIKA NORMALNA (BEZ VELOCITY) ---
+            if (viaProxy) {
+                // ViaProxy -> Boty
+                startViaProxy(ip, viaProxyVersion, () => {
+                    startBotProcess('0.0.0.0:25568');
                 });
+            } else {
+                // Boty bezpośrednio
+                startBotProcess(ip);
             }
 
         } else if (data.type === 'start_killswitch_attack') {
@@ -773,6 +1118,12 @@ wss.on('connection', (ws) => {
                 velocityProcess.kill();
                 velocityProcess = null;
                 broadcast({ type: 'info', message: 'Velocity stopped.' });
+                stoppedSomething = true;
+            }
+            if (viaProxyProcess) {
+                viaProxyProcess.kill();
+                viaProxyProcess = null;
+                broadcast({ type: 'info', message: 'ViaProxy stopped.' });
                 stoppedSomething = true;
             }
 

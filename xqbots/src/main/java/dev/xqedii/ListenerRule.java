@@ -10,10 +10,17 @@ public class ListenerRule {
     private final String condition;
     private final List<String> actions;
 
-    private static final Pattern CONDITION_PATTERN = Pattern.compile("if\\s+(\\{\\w+})\\s+(contains|is|notcontains|isnot)\\s+\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
+    // Pattern obsługuje fragmenty warunku: {zmienna} operator "wartosc"
+    private static final Pattern CONDITION_PATTERN = Pattern.compile("(\\{\\w+})\\s+(contains|is|notcontains|isnot)\\s+\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
 
     public ListenerRule(String condition) {
-        this.condition = condition;
+        // --- POPRAWKA: Sprawdzamy, czy condition nie jest nullem przed użyciem toLowerCase() ---
+        if (condition != null && condition.toLowerCase().startsWith("if ")) {
+            this.condition = condition.substring(3).trim();
+        } else {
+            this.condition = condition;
+        }
+        // ---------------------------------------------------------------------------------------
         this.actions = new ArrayList<>();
     }
 
@@ -25,14 +32,29 @@ public class ListenerRule {
         return actions;
     }
 
-    public boolean isConditionMet(String message, PlayerInfo playerInfo) {
-        if (condition == null) {
+    public boolean isConditionMet(Bot bot, String message, PlayerInfo playerInfo) {
+        // Jeśli warunek jest pusty (null), oznacza to regułę ogólną (bez [if]),
+        // która wykonuje się dla wiadomości systemowych (nie od graczy).
+        if (condition == null || condition.isEmpty()) {
             return !playerInfo.isPlayerMsg();
         }
 
+        // --- OBSŁUGA OPERATORA && (AND) ---
+        if (condition.contains("&&")) {
+            String[] parts = condition.split("&&");
+            for (String part : parts) {
+                // Tworzymy tymczasową regułę dla każdego kawałka i sprawdzamy
+                ListenerRule subRule = new ListenerRule(part.trim());
+                if (!subRule.isConditionMet(bot, message, playerInfo)) {
+                    return false; // Jeśli choć jeden warunek nie pasuje -> Fałsz
+                }
+            }
+            return true; // Wszystkie pasują
+        }
+        // ----------------------------------
+
         Matcher matcher = CONDITION_PATTERN.matcher(condition);
-        if (!matcher.matches()) {
-            Log.warn("Invalid IF condition format: " + condition);
+        if (!matcher.find()) {
             return false;
         }
 
@@ -40,7 +62,8 @@ public class ListenerRule {
         String operator = matcher.group(2).toLowerCase();
         String value = matcher.group(3);
 
-        String textToCompare;
+        String textToCompare = "";
+
         switch (placeholder) {
             case "{message}":
                 textToCompare = message;
@@ -52,6 +75,17 @@ public class ListenerRule {
             case "{playermsg}":
                 if (!playerInfo.isPlayerMsg()) return false;
                 textToCompare = playerInfo.getPlayerMessage();
+                break;
+
+            // --- RZUTUJEMY NA INT ---
+            case "{x}":
+                textToCompare = String.valueOf((int) bot.getX());
+                break;
+            case "{y}":
+                textToCompare = String.valueOf((int) bot.getY());
+                break;
+            case "{z}":
+                textToCompare = String.valueOf((int) bot.getZ());
                 break;
             default:
                 Log.warn("Unknown placeholder in IF condition: " + placeholder);

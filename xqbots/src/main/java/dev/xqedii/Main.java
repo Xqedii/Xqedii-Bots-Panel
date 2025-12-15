@@ -35,13 +35,16 @@ public class Main {
     private static boolean mostMinimal = false;
     private static volatile boolean isAutoSwapRunning = false;
 
-    public static int autoReconnectDelay = 0;
+    public static int autoReconnectDelay = 0; // Domyślnie 0 = wyłączone
     private static boolean useProxies = false;
     private static final ArrayList<ProxyDetails> proxies = new ArrayList<>();
     private static int proxyIndex = 0;
     private static int proxyCount = 0;
     private static ProxyInfo.Type proxyType;
 
+    public static String captchaMode = "manual"; // Domyślnie
+    public static List<MultiAction> loadedMultiActions = new ArrayList<>();
+    public static List<String> activeListenerFiles = new ArrayList<>();
     private static Timer timer = new Timer();
     private static ListenerManager listenerManager = null;
 
@@ -84,6 +87,7 @@ public class Main {
         options.addOption("t", "proxy-type", true, "Proxy type: SOCKS4 or SOCKS5");
         options.addOption(null, "socks5", true, "Path to SOCKS5 proxy list");
         options.addOption(null, "socks4", true, "Path to SOCKS4 proxy list");
+        options.addOption(null, "captcha-mode", true, "Captcha mode: manual or api");
 
         options.addOption(null, "nicks", true, "Path to nicks file with nick on every line");
         options.addOption(null, "nick-base", true, "Base name for sequential nicks (e.g., MyBot)");
@@ -91,6 +95,10 @@ public class Main {
         options.addOption("a", "actions", true, "Path to actions script file");
         options.addOption("r", "autoreconnect", true, "Auto reconnect delay (ms)");
         options.addOption(null, "listeners", true, "Path to listeners folder");
+
+        // NOWE OPCJE
+        options.addOption(null, "active-listeners", true, "Comma separated list of active listener files");
+        options.addOption(null, "active-multi-actions", true, "Special string for multi actions");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -102,6 +110,38 @@ public class Main {
             new HelpFormatter().printHelp("bot-utility", options);
             System.exit(1);
         }
+
+        // Parsing Active Listeners
+        if (cmd.hasOption("active-listeners")) {
+            String raw = cmd.getOptionValue("active-listeners");
+            activeListenerFiles = Arrays.asList(raw.split(","));
+            Log.info("Active Listeners: " + activeListenerFiles);
+        }
+        if (cmd.hasOption("captcha-mode")) {
+            captchaMode = cmd.getOptionValue("captcha-mode");
+            Log.info("Captcha mode set to: " + captchaMode);
+        }
+        // Parsing Multi Actions
+        if (cmd.hasOption("active-multi-actions")) {
+            String raw = cmd.getOptionValue("active-multi-actions");
+            String[] entries = raw.split(";;;");
+
+            for (String entry : entries) {
+                String[] parts = entry.split("\\|");
+                if (parts.length >= 2) {
+                    String path = parts[0];
+                    String trigger = parts[1];
+                    try {
+                        List<String> lines = Files.readAllLines(Paths.get(path));
+                        loadedMultiActions.add(new MultiAction(trigger, lines));
+                        Log.info("Loaded MultiAction Trigger: '" + trigger + "' (" + lines.size() + " lines)");
+                    } catch (IOException e) {
+                        Log.error("Failed to load MultiAction file: " + path);
+                    }
+                }
+            }
+        }
+
         if (cmd.hasOption("nicks") && cmd.hasOption("nick-base")) {
             Log.error("Error: --nicks and --nick-base cannot be used at the same time. Please choose one.");
             new HelpFormatter().printHelp("bot-utility", options);
@@ -122,10 +162,11 @@ public class Main {
             listenerManager = new ListenerManager(listenersPath);
         }
 
+        // (Reszta obsługi proxy - bez zmian)
         if (cmd.hasOption('l') || cmd.hasOption("socks5") || cmd.hasOption("socks4")) {
-
+            // ... (twój dotychczasowy kod obsługi proxy) ...
+            // Skróciłem tu dla czytelności, wklej tu swój kod proxy
             String proxyPath = null;
-
             if (cmd.hasOption("socks5")) {
                 proxyType = ProxyInfo.Type.SOCKS5;
                 proxyPath = cmd.getOptionValue("socks5");
@@ -143,43 +184,31 @@ public class Main {
                     }
                 }
             }
-
             if (proxyPath == null && cmd.hasOption('l')) {
                 proxyPath = cmd.getOptionValue("l");
             }
-
             if (proxyPath != null && proxyType != null) {
                 try {
                     ArrayList<String> lines = new ArrayList<>();
                     try {
                         URL url = new URL(proxyPath);
                         try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-                            Log.info("Reading proxies from URL...");
                             String line;
-                            while ((line = reader.readLine()) != null) {
-                                lines.add(line);
-                            }
+                            while ((line = reader.readLine()) != null) lines.add(line);
                         }
                     } catch (MalformedURLException e) {
-                        Log.info("Specified proxy source is not a URL, trying to read as a file...");
                         try (Scanner scanner = new Scanner(new File(proxyPath))) {
-                            while (scanner.hasNextLine()) {
-                                lines.add(scanner.nextLine());
-                            }
+                            while (scanner.hasNextLine()) lines.add(scanner.nextLine());
                         }
                     }
-
                     for (String line : lines) {
                         if (line.trim().isEmpty() || line.startsWith("#")) continue;
-
                         try {
                             String host = null;
                             int port = -1;
                             String username = "";
                             String password = "";
-
                             String cleanLine = line.trim();
-
                             if (cleanLine.contains("@")) {
                                 String[] authAndHost = cleanLine.split("@");
                                 if (authAndHost.length == 2) {
@@ -195,7 +224,6 @@ public class Main {
                             }
                             else {
                                 String[] parts = cleanLine.split(":");
-
                                 if (parts.length == 2) {
                                     host = parts[0];
                                     port = Integer.parseInt(parts[1]);
@@ -207,21 +235,16 @@ public class Main {
                                     password = parts[3];
                                 }
                             }
-
                             if (host != null && port != -1) {
                                 proxies.add(new ProxyDetails(host, port, username, password));
                                 proxyCount++;
                             }
-
-                        } catch (Exception ex) {
-                        }
+                        } catch (Exception ex) {}
                     }
-
                 } catch (IOException e) {
                     Log.error("Could not read proxy list from: " + proxyPath);
                     System.exit(1);
                 }
-
                 if (proxyCount > 0) {
                     useProxies = true;
                     Log.info("Loaded " + proxyCount + " valid proxies (" + proxyType + ").");
@@ -285,11 +308,6 @@ public class Main {
                 Log.error("No valid nicknames loaded.");
                 System.exit(1);
             }
-
-            if (nicksCount < botCount) {
-                Log.warn("Nickname count is lower than bot count!");
-                Thread.sleep(3000);
-            }
         }
 
         InetSocketAddress inetAddr = new InetSocketAddress(address, port);
@@ -308,8 +326,6 @@ public class Main {
                             + " (" + statusInfo.getVersionInfo().getProtocolVersion()
                             + ")"
             );
-            Log.info("Player Count: " + statusInfo.getPlayerInfo().getOnlinePlayers()
-                    + " / " + statusInfo.getPlayerInfo().getMaxPlayers());
         }
         Log.info();
 
@@ -319,26 +335,13 @@ public class Main {
                     ProxyInfo proxyInfo = null;
                     if (useProxies) {
                         ProxyDetails details = proxies.get(proxyIndex);
-
-                        if (!minimal) {
-                            Log.info(
-                                    "Using proxy: (" + (proxyIndex + 1) + "/" + proxyCount + ")",
-                                    details.host + ":" + details.port
-                            );
-                        }
-
                         proxyInfo = new ProxyInfo(
                                 proxyType,
                                 new InetSocketAddress(details.host, details.port),
                                 details.username,
                                 details.password
                         );
-
-                        if (proxyIndex < (proxyCount - 1)) {
-                            proxyIndex++;
-                        } else {
-                            proxyIndex = 0;
-                        }
+                        if (proxyIndex < (proxyCount - 1)) proxyIndex++; else proxyIndex = 0;
                     }
 
                     Bot bot = new Bot(
@@ -352,7 +355,6 @@ public class Main {
                     bot.start();
 
                     if (!mostMinimal) bots.add(bot);
-
                     triedToConnect++;
 
                     if (isMainListenerMissing && !isMinimal()) {
@@ -366,10 +368,7 @@ public class Main {
                         Thread.sleep(delay);
                     }
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
+                } catch (Exception e) { e.printStackTrace(); }
             }
         }).start();
 
@@ -385,9 +384,60 @@ public class Main {
                 Log.info("Sending chat message from all bots: " + line);
                 bots.forEach(bot -> bot.sendChat(line));
             }
-
             Thread.sleep(50);
         }
+    }
+
+    public static synchronized void executeMultiAction(MultiAction action) {
+        new Thread(() -> {
+            Log.imp("Executing MultiAction for trigger: " + action.getTrigger());
+
+            int currentBotIndex = 0;
+
+            for (String line : action.getLines()) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+
+                // POPRAWIONA SEKCJA OBSŁUGI WAIT / DELAY
+                if (line.startsWith("[wait") || line.startsWith("[delay")) {
+                    try {
+                        // Pobiera wszystko między pierwszą spacją a ostatnim nawiasem ]
+                        // Działa dla [wait 1000] i [delay 1000]
+                        int spaceIndex = line.indexOf(" ");
+                        int bracketIndex = line.lastIndexOf("]");
+
+                        if (spaceIndex != -1 && bracketIndex != -1) {
+                            String val = line.substring(spaceIndex + 1, bracketIndex).trim();
+                            Thread.sleep(Long.parseLong(val));
+                        }
+                    } catch (Exception e) {
+                        Log.warn("Invalid wait syntax in MultiAction: " + line);
+                    }
+                    continue; // Przechodzimy do następnej linii po odczekaniu
+                }
+
+                if (line.startsWith("[send") || line.startsWith("[chat")) {
+                    try {
+                        String msg = line.substring(line.indexOf("\"") + 1, line.lastIndexOf("\""));
+
+                        synchronized (Main.class) {
+                            if (bots.isEmpty()) break;
+
+                            // Wybierz bota (Round Robin)
+                            if (currentBotIndex >= bots.size()) currentBotIndex = 0;
+                            Bot sender = bots.get(currentBotIndex);
+
+                            sender.sendChat(msg);
+                            currentBotIndex++;
+                        }
+                        // Małe opóźnienie techniczne między wysłaniem wiadomości (nie mylić z [wait])
+                        Thread.sleep(50);
+                    } catch(Exception e){
+                        Log.error("Error executing line: " + line);
+                    }
+                }
+            }
+        }).start();
     }
     public static void reconnectBot(Bot oldBot) {
         if (autoReconnectDelay <= 0) return;
@@ -410,6 +460,7 @@ public class Main {
 
                     synchronized (Main.class) {
                         bots.add(newBot);
+                        // Jeśli włączony był headroll albo swap dla wszystkich, można to tu przywrócić
                         if (isAutoSwapRunning) newBot.startSectorSwapping();
                     }
                 } catch (Exception e) {
@@ -448,6 +499,49 @@ public class Main {
                     isAutoSwapRunning = true;
                 }
                 break;
+            // W pliku Main.java, wewnątrz metody handleCommand
+
+            case "slot": {
+                if (parts.length < 2) {
+                    Log.warn("Usage: !slot <0-8>");
+                    break;
+                }
+
+                try {
+                    int slot = Integer.parseInt(parts[1]);
+
+                    if (slot < 0 || slot > 8) {
+                        Log.warn("Invalid slot number! Use 0-8.");
+                        break;
+                    }
+
+                    Log.info("Changing hotbar slot to " + slot + " for all bots...");
+                    bots.forEach(bot -> bot.selectHotbarSlot(slot));
+
+                } catch (NumberFormatException e) {
+                    Log.warn("Invalid number format: " + parts[1]);
+                }
+                break;
+            }
+            case "shoot": {
+                if (parts.length < 2) {
+                    Log.warn("Usage: !shoot on/off");
+                    break;
+                }
+
+                String option = parts[1].toLowerCase().trim();
+
+                if (option.equals("on")) {
+                    Log.info("Enabling auto-shooting for all bots...");
+                    bots.forEach(Bot::startShooting);
+                } else if (option.equals("off")) {
+                    Log.info("Disabling auto-shooting for all bots...");
+                    bots.forEach(Bot::stopShooting);
+                } else {
+                    Log.warn("Unknown option: " + option);
+                }
+                break;
+            }
             case "ascii":
                 List<String> messagesToUse;
                 if (parts.length > 1) {
@@ -468,9 +562,79 @@ public class Main {
                 bots.forEach(Bot::startSendingPackets);
                 break;
             }
+            case "right":
+                Log.info("Executing right click for all bots...");
+                bots.forEach(Bot::rightClickWithItem);
+                break;
+
+            case "gui":
+                if (parts.length < 2) {
+                    Log.warn("Usage: !gui <slot>");
+                    break;
+                }
+                try {
+                    int slot = Integer.parseInt(parts[1]);
+                    Log.info("Clicking GUI slot " + slot + " for all bots...");
+                    bots.forEach(bot -> bot.clickSlotInAllContainers(slot));
+                } catch (NumberFormatException e) {
+                    Log.warn("Invalid slot number.");
+                }
+                break;
             case "dropall": {
                 Log.info("Executing 'dropHotbarItems' for all " + bots.size() + " bots...");
                 bots.forEach(Bot::dropHotbarItems);
+                break;
+            }
+            case "goto": {
+                if (parts.length < 2) {
+                    Log.warn("Usage: !goto <x> <y> <z>");
+                    break;
+                }
+
+                String[] coords = parts[1].trim().split(" ");
+                if (coords.length < 3) {
+                    Log.warn("Usage: !goto <x> <y> <z>");
+                    break;
+                }
+
+                try {
+                    double x = Double.parseDouble(coords[0]);
+                    double y = Double.parseDouble(coords[1]);
+                    double z = Double.parseDouble(coords[2]);
+
+                    Log.info("Moving all bots to X:" + x + " Y:" + y + " Z:" + z);
+
+                    bots.forEach(bot -> bot.moveSmoothlyTo(x, y, z));
+
+                } catch (NumberFormatException e) {
+                    Log.warn("Invalid coordinate format. Use numbers (e.g., !goto 100 64 200).");
+                }
+                break;
+            }
+            case "gravity": {
+                if (parts.length < 2) {
+                    Log.warn("Uzycie: !gravity <on/off>");
+                    break;
+                }
+
+                String mode = parts[1].toLowerCase().trim();
+
+                if (!mode.equals("on") && !mode.equals("off")) {
+                    Log.warn("Nieznany tryb. Uzyj 'on' lub 'off'.");
+                    break;
+                }
+
+                Log.info("Ustawianie grawitacji na " + mode + " dla wszystkich botow...");
+
+                // Wykorzystujemy istniejącą w Bot.java metodę processCommand,
+                // która posiada już logikę bezpiecznego wyłączania/włączania fizyki
+                bots.forEach(bot -> {
+                    try {
+                        bot.processCommand("[gravity " + mode + "]");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
                 break;
             }
             case "ch":
@@ -598,6 +762,34 @@ public class Main {
                     case "drop":
                         targetBot.dropHotbarItems();
                         break;
+
+                    case "shoot":
+                        if (botParts.length < 4) {
+                            Log.warn("Usage: !bot <ID> shoot on/off");
+                            break;
+                        }
+                        String shootOption = botParts[3].toLowerCase();
+                        if (shootOption.equals("on")) {
+                            targetBot.startShooting();
+                            Log.info("Shooting enabled for bot " + targetBot.getNickname());
+                        } else if (shootOption.equals("off")) {
+                            targetBot.stopShooting();
+                            Log.info("Shooting disabled for bot " + targetBot.getNickname());
+                        }
+                        break;
+                    case "slot":
+                        if (botParts.length < 4) {
+                            Log.warn("Usage: !bot <ID> slot <0-8>");
+                            break;
+                        }
+                        try {
+                            int slot = Integer.parseInt(botParts[3]);
+                            targetBot.selectHotbarSlot(slot);
+                            Log.info("Bot " + targetBot.getNickname() + " selected slot " + slot);
+                        } catch (NumberFormatException e) {
+                            Log.warn("Invalid slot number.");
+                        }
+                        break;
                     case "headroll":
                         if (botParts.length < 4) {
                             Log.warn("Usage: !bot <ID> headroll on/off");
@@ -692,6 +884,7 @@ public class Main {
             isMainListenerMissing = true;
         }
 
+        // --- ZMIANA: Nie wyłączamy programu, jeśli autoreconnect jest włączony ---
         if (bots.size() > 0) {
             if (isMainListenerMissing && !isMinimal()) {
                 Log.info("Renewing MainListener");
@@ -699,6 +892,7 @@ public class Main {
                 isMainListenerMissing = false;
             }
         } else {
+            // Wyłączamy tylko jeśli autoreconnect jest WYŁĄCZONY
             if (autoReconnectDelay <= 0 && triedToConnect == botCount) {
                 Log.error("All bots disconnected, exiting");
                 System.exit(0);

@@ -1,0 +1,9 @@
+[CHAT listener]:
+    [log {message}]
+    [if {message} contains "Witaj,"]:
+        [wait 1000]
+        [slot 4]
+        [wait 100]
+        [right]
+        [wait 100]
+        [gui 11]

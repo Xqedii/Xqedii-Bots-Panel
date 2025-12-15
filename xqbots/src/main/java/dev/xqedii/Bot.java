@@ -8,12 +8,11 @@ import com.github.steveice10.mc.protocol.data.game.entity.player.*;
 import com.github.steveice10.mc.protocol.data.game.inventory.ClickItemAction;
 import com.github.steveice10.mc.protocol.data.game.inventory.ContainerActionType;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundBossEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import com.github.steveice10.mc.protocol.packet.handshake.serverbound.ClientIntentionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.*;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundAnimatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetPassengersPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket; // Needed for dismount
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetPassengersPacket; // Needed for mount
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundSetCarriedItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
@@ -26,15 +25,34 @@ import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientInformationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundCustomPayloadPacket;
 import java.io.ByteArrayOutputStream;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPingPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetContentPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundOpenScreenPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerClosePacket;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundKeepAlivePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundKeepAlivePacket;
+import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
+import java.lang.reflect.Field;
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
+import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundUseItemPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.title.ClientboundSetTitleTextPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.title.ClientboundSetSubtitleTextPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerRotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundPongPacket;
 import java.nio.charset.StandardCharsets;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundSwingPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundResourcePackPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundResourcePackPacket;
+import com.github.steveice10.mc.protocol.data.game.ResourcePackStatus;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundSwingPacket; // Zamiast ServerboundSwingArmPacket
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundCustomPayloadPacket; // Opcjonalnie do brandu
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundAcceptTeleportationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundMoveVehiclePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundPaddleBoatPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundMoveVehiclePacket; // Needed for vehicle physics
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundPaddleBoatPacket; // Needed for boat check
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundPlayerInputPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.*;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
@@ -46,18 +64,33 @@ import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.kyori.adventure.text.Component;
+
+// --- IMPORTY DO MAPY I SERWERA HTTP ---
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.*;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.io.OutputStream;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundMapItemDataPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetSlotPacket;
+import com.github.steveice10.mc.protocol.data.game.level.map.MapData;
+// ---------------------------------------
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.*;
 
 public class Bot extends Thread {
@@ -70,28 +103,54 @@ public class Bot extends Thread {
     private Session client;
     private boolean hasMainListener;
     private boolean LimboConnected = false;
+    private ScheduledExecutorService bowExecutor;
+    private boolean isFirstLogin = true;
+    // Cache danych map: MapID -> Tablica bajtów kolorów (128x128 = 16384)
+    private final java.util.Map<Integer, byte[]> mapCache = new ConcurrentHashMap<>();
+    // Proste śledzenie hotbara (sloty 36-44 w kontenerze 0 to hotbar 0-8)
+    private final ItemStack[] hotbarItems = new ItemStack[9];
 
+    private int currentWindowId = 0;
+    private final Map<Integer, ItemStack> currentWindowItems = new ConcurrentHashMap<>();
+    // Position variables
     private double lastX, lastY, lastZ = -1;
     private float lastYaw, lastPitch = 0;
     private boolean onGround = false;
 
+    // ANTI-BOT FIX VARIABLES
     private int entityId = 0;
     private int currentSlot = 0;
 
+    // VEHICLE CHECK VARIABLES
     private boolean isInVehicle = false;
     private int vehicleId = -1;
     private ScheduledExecutorService vehicleExecutor;
     private double vehicleMotionY = 0;
     private double lastVehicleY = 0;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> captchaDebounceTask;
+    private final java.util.Set<Integer> recentMapIds = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
+    public static String captchaMode = "manual"; // Domyślnie manual
     private String actionsFilePath;
     private ScheduledExecutorService sectorSwapExecutor;
     private final ExecutorService scriptExecutor = Executors.newSingleThreadExecutor();
     private final ListenerManager listenerManager;
 
+    public double getX() {
+        return lastX;
+    }
+    public double getY() {
+        return lastY;
+    }
+    public double getZ() {
+        return lastZ;
+    }
+    // Gravity System (Player)
     private ScheduledExecutorService gravityExecutor;
     private double motionY = 0;
     private double targetLandY = -999;
+    private boolean gravityEnabled = true; // Domyślnie grawitacja włączona
 
     private int ServerLoop = 5;
 
@@ -120,43 +179,216 @@ public class Bot extends Thread {
     @Override
     public void run() {
         client.addListener(new SessionAdapter() {
+
             @Override
             public void packetReceived(Session session, Packet packet) {
+                // [DEBUG] Odkomentuj linię niżej, jeśli bot nadal nie działa, żeby widzieć WSZYSTKIE pakiety
+                // Log.info("DEBUG PACKET: " + packet.getClass().getSimpleName());
 
                 if (packet instanceof ClientboundLoginPacket) {
                     ClientboundLoginPacket login = (ClientboundLoginPacket) packet;
                     entityId = login.getEntityId();
                     connected = true;
 
-                    List<SkinPart> skinParts = new ArrayList<>(Arrays.asList(SkinPart.values()));
-                    client.send(new ServerboundClientInformationPacket(
-                            "en_US", 10, ChatVisibility.FULL, true, skinParts,
-                            HandPreference.RIGHT_HAND, false, true
-                    ));
+                    // Reset fizyki przy KAŻDEJ zmianie serwera/świata
+                    if (gravityExecutor != null) gravityExecutor.shutdownNow();
+                    if (vehicleExecutor != null) vehicleExecutor.shutdownNow();
+                    onGround = false;
+                    motionY = 0;
 
-                    try {
-                        String brand = "vanilla";
-                        ByteArrayOutputStream brandOut = new ByteArrayOutputStream();
-                        brandOut.write(brand.length());
-                        brandOut.write(brand.getBytes(StandardCharsets.UTF_8));
-                        client.send(new ServerboundCustomPayloadPacket("minecraft:brand", brandOut.toByteArray()));
-                    } catch (Exception e) { e.printStackTrace(); }
+                    // Logika wysyłania pakietów startowych
+                    if (isFirstLogin) {
+                        // TO WYKONUJE SIĘ TYLKO RAZ - PRZY POŁĄCZENIU DO PROXY (AUTH)
+                        isFirstLogin = false;
 
-                    if (!LimboConnected) {
-                        LimboConnected = true;
-                        Log.imp(nickname + " Connected to server! [#" + botId + "]");
-                        scriptExecutor.submit(Bot.this::executeScriptFromFile);
+                        // Tutaj małe opóźnienie dla bezpieczeństwa startu
+                        new Thread(() -> {
+                            try {
+                                Thread.sleep(500);
+
+                                // --- Client Settings --- (Wysyłamy tylko raz!)
+                                List<SkinPart> skinParts = new ArrayList<>(Arrays.asList(SkinPart.values()));
+                                client.send(new ServerboundClientInformationPacket(
+                                        "en_US", 10, ChatVisibility.FULL, true, skinParts,
+                                        HandPreference.RIGHT_HAND, false, true
+                                ));
+
+                                // --- Brand --- (Wysyłamy tylko raz!)
+                                try {
+                                    String brand = "vanilla";
+                                    ByteArrayOutputStream brandOut = new ByteArrayOutputStream();
+                                    brandOut.write(brand.length());
+                                    brandOut.write(brand.getBytes(StandardCharsets.UTF_8));
+                                    client.send(new ServerboundCustomPayloadPacket("minecraft:brand", brandOut.toByteArray()));
+                                } catch (Exception e) { e.printStackTrace(); }
+
+                                // Skrypt startowy
+                                if (!LimboConnected) {
+                                    LimboConnected = true;
+                                    Log.imp(nickname + " Connected to server! [#" + botId + "]");
+                                    scriptExecutor.submit(Bot.this::executeScriptFromFile);
+                                }
+
+                            } catch (Exception e) { e.printStackTrace(); }
+                        }).start();
+
+                    } else {
+                        Log.info("Switched server/dimension (Packet ignored to prevent Config Phase crash).");
                     }
                 }
                 else if (packet instanceof ClientboundAddEntityPacket) {
                     ClientboundAddEntityPacket p = (ClientboundAddEntityPacket) packet;
                     lastVehicleY = p.getY();
                 }
+                else if (packet instanceof ClientboundResourcePackPacket) {
+                    ClientboundResourcePackPacket p = (ClientboundResourcePackPacket) packet;
+                    String url = p.getUrl();
+                    String hash = p.getHash();
+
+                    client.send(new ServerboundResourcePackPacket(ResourcePackStatus.ACCEPTED));
+
+                    client.send(new ServerboundResourcePackPacket(ResourcePackStatus.SUCCESSFULLY_LOADED));
+                }
+                else if (packet instanceof ClientboundMapItemDataPacket) {
+                    ClientboundMapItemDataPacket p = (ClientboundMapItemDataPacket) packet;
+                    int mapId = p.getMapId();
+                    MapData data = p.getData();
+
+                    if (data != null && data.getData() != null && data.getData().length > 0) {
+                        // 1. Aktualizacja danych konkretnej mapy w pamięci
+                        mapCache.compute(mapId, (k, v) -> {
+                            if (v == null) v = new byte[16384];
+                            byte[] packetColors = data.getData();
+                            // Proste nadpisanie bufora (najskuteczniejsze przy captchach)
+                            System.arraycopy(packetColors, 0, v, 0, Math.min(packetColors.length, v.length));
+                            return v;
+                        });
+
+                        // 2. Dodajemy ID tej mapy do listy "ostatnio odebranych"
+                        recentMapIds.add(mapId);
+
+                        // 3. Logika Debounce + Stitching (Sklejanie)
+                        if (listenerManager != null) {
+                            if (captchaDebounceTask != null && !captchaDebounceTask.isDone()) {
+                                captchaDebounceTask.cancel(false);
+                            }
+
+                            // Czekamy 500ms od ostatniego pakietu
+                            captchaDebounceTask = scheduler.schedule(() -> {
+                                try {
+                                    // Pobieramy i sortujemy ID map (zakładamy, że serwer wysyła je po kolei: 100, 101, 102...)
+                                    List<Integer> sortedIds = new ArrayList<>(recentMapIds);
+                                    Collections.sort(sortedIds);
+
+                                    int count = sortedIds.size();
+                                    if (count == 0) return;
+
+                                    // Logika układania:
+                                    // 4 mapy = 2x2
+                                    // 9 map = 3x3
+                                    // Inna ilość = Pasek poziomy (np. 1, 2, 3 mapy w rzędzie)
+                                    int columns = (int) Math.ceil(Math.sqrt(count));
+                                    int rows = (int) Math.ceil((double) count / columns);
+
+                                    int singleSize = 128;
+                                    int totalWidth = columns * singleSize;
+                                    int totalHeight = rows * singleSize;
+
+                                    // Tworzymy płótno na duży obrazek
+                                    BufferedImage combinedImage = new BufferedImage(totalWidth, totalHeight, BufferedImage.TYPE_INT_RGB);
+                                    java.awt.Graphics2D g = combinedImage.createGraphics();
+
+                                    for (int i = 0; i < count; i++) {
+                                        int id = sortedIds.get(i);
+                                        byte[] mapColors = mapCache.get(id);
+
+                                        if (mapColors != null) {
+                                            // Konwertujemy pojedynczą mapę na obrazek
+                                            BufferedImage part = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+                                            for (int j = 0; j < mapColors.length; j++) {
+                                                int rgb = MapPalette.getColor(mapColors[j] & 0xFF);
+                                                part.setRGB(j % 128, j / 128, rgb);
+                                            }
+
+                                            // Obliczamy pozycję na dużym obrazku
+                                            int col = i % columns;
+                                            int row = i / columns;
+
+                                            // Wklejamy kawałek
+                                            g.drawImage(part, col * 128, row * 128, null);
+                                        }
+                                    }
+                                    g.dispose();
+
+                                    // Konwersja całości do Base64 i wysyłka
+                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                    ImageIO.write(combinedImage, "png", baos);
+                                    String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
+
+                                    // Wysyłamy gotowy, sklejony obrazek (używając starej logiki wysyłki, ale z nowym Base64)
+                                    sendCaptchaToApi(base64Image);
+
+                                    // Czyścimy listę po przetworzeniu
+                                    recentMapIds.clear();
+
+                                } catch (Exception e) {
+                                    Log.error("Error stitching maps: " + e.getMessage());
+                                }
+                            }, 500, TimeUnit.MILLISECONDS);
+                        }
+                    }
+                }
+
+                else if (packet instanceof ClientboundOpenScreenPacket) {
+                    ClientboundOpenScreenPacket p = (ClientboundOpenScreenPacket) packet;
+                    currentWindowId = p.getContainerId();
+                    currentWindowItems.clear(); // Czyścimy pamięć przy otwarciu nowego okna
+                    Log.info("Opened window ID: " + currentWindowId + " Type: " + p.getType());
+                }
+                else if (packet instanceof ClientboundContainerClosePacket) {
+                    ClientboundContainerClosePacket p = (ClientboundContainerClosePacket) packet;
+                    if (p.getContainerId() == currentWindowId) {
+                        currentWindowId = 0; // Resetujemy ID, bo okno zamknięte
+                        currentWindowItems.clear();
+                    }
+                }
+                else if (packet instanceof ClientboundContainerSetContentPacket) {
+                    ClientboundContainerSetContentPacket p = (ClientboundContainerSetContentPacket) packet;
+                    if (p.getContainerId() == currentWindowId && currentWindowId != 0) {
+                        currentWindowItems.clear();
+                        ItemStack[] items = p.getItems();
+                        for (int i = 0; i < items.length; i++) {
+                            if (items[i] != null) {
+                                currentWindowItems.put(i, items[i]);
+                            }
+                        }
+                    }
+                }
+                // --- ŚLEDZENIE EKWIPUNKU (HOTBAR) ---
+                else if (packet instanceof ClientboundContainerSetSlotPacket) {
+                    ClientboundContainerSetSlotPacket p = (ClientboundContainerSetSlotPacket) packet;
+
+                    // Aktualizacja śledzenia inventory dla GUI Captcha
+                    if (p.getContainerId() == currentWindowId && currentWindowId != 0) {
+                        if (p.getItem() != null) {
+                            currentWindowItems.put(p.getSlot(), p.getItem());
+                        } else {
+                            currentWindowItems.remove(p.getSlot());
+                        }
+                    }
+
+                    // Stara logika dla Hotbara (zachowujemy ją)
+                    if (p.getContainerId() == 0) {
+                        int slot = p.getSlot();
+                        if (slot >= 36 && slot <= 44) {
+                            hotbarItems[slot - 36] = p.getItem();
+                        }
+                    }
+                }
                 else if (packet instanceof ClientboundPingPacket) {
                     ClientboundPingPacket p = (ClientboundPingPacket) packet;
                     client.send(new ServerboundPongPacket(p.getId()));
                 }
-
                 else if (packet instanceof ClientboundSetCarriedItemPacket) {
                     ClientboundSetCarriedItemPacket p = (ClientboundSetCarriedItemPacket) packet;
                     int newSlot = p.getSlot();
@@ -178,6 +410,7 @@ public class Bot extends Thread {
                     }
                 }
 
+                // --- GRAVITY: BLOCKS (SINGLE) ---
                 else if (packet instanceof ClientboundBlockUpdatePacket) {
                     ClientboundBlockUpdatePacket p = (ClientboundBlockUpdatePacket) packet;
                     int blockStateId = p.getEntry().getBlock();
@@ -185,6 +418,7 @@ public class Bot extends Thread {
                         updateLandingHeight(blockStateId, p.getEntry().getPosition().getY());
                     }
                 }
+                // --- GRAVITY: BLOCKS (MULTI/SECTION) ---
                 else if (packet instanceof ClientboundSectionBlocksUpdatePacket) {
                     ClientboundSectionBlocksUpdatePacket p = (ClientboundSectionBlocksUpdatePacket) packet;
                     for (var entry : p.getEntries()) {
@@ -195,29 +429,57 @@ public class Bot extends Thread {
                         }
                     }
                 }
+                else if (packet instanceof ClientboundRespawnPacket) {
+                    ClientboundRespawnPacket p = (ClientboundRespawnPacket) packet;
 
+                    // Zatrzymujemy wszelki ruch
+                    Bot.this.motionY = 0;
+                    Bot.this.onGround = false;
+                    Bot.this.isInVehicle = false;
+                    Bot.this.vehicleId = -1;
+
+                    if (gravityExecutor != null && !gravityExecutor.isShutdown()) {
+                        gravityExecutor.shutdownNow();
+                    }
+                    if (vehicleExecutor != null && !vehicleExecutor.isShutdown()) {
+                        vehicleExecutor.shutdownNow();
+                    }
+
+                    // Ważne: Nie wysyłamy tu żadnych pakietów potwierdzających! Czekamy na PositionPacket.
+                }
                 else if (packet instanceof ClientboundPlayerPositionPacket) {
                     ClientboundPlayerPositionPacket p = (ClientboundPlayerPositionPacket) packet;
 
+                    // Aktualizacja pozycji w pamięci bota
                     if (p.getRelative().contains(PositionElement.X)) lastX += p.getX(); else lastX = p.getX();
                     if (p.getRelative().contains(PositionElement.Y)) lastY += p.getY(); else lastY = p.getY();
                     if (p.getRelative().contains(PositionElement.Z)) lastZ += p.getZ(); else lastZ = p.getZ();
                     if (p.getRelative().contains(PositionElement.YAW)) lastYaw += p.getYaw(); else lastYaw = p.getYaw();
                     if (p.getRelative().contains(PositionElement.PITCH)) lastPitch += p.getPitch(); else lastPitch = p.getPitch();
 
+                    // 1. Potwierdzenie teleportacji jest wymagane zawsze
                     client.send(new ServerboundAcceptTeleportationPacket(p.getTeleportId()));
+
+                    // 2. Odsyłamy pozycję, ALE...
+                    // Przy wchodzeniu na serwer 1.21.4 przez Proxy, wysłanie tego pakietu zbyt wcześnie
+                    // (przed zakończeniem Configuration Phase) powoduje błąd.
+                    // Wysyłamy go tylko raz, bez włączania grawitacji od razu.
                     client.send(new ServerboundMovePlayerPosRotPacket(onGround, lastX, lastY, lastZ, lastYaw, lastPitch));
 
+                    // Reset fizyki
                     motionY = 0;
-                    onGround = false;
+                    if (gravityExecutor != null) gravityExecutor.shutdownNow();
 
-                    if (!isInVehicle) {
-                        if (gravityExecutor != null && !gravityExecutor.isShutdown()) {
-                            gravityExecutor.shutdownNow();
-                        }
-                        startGravitySimulation();
-                    } else {
-                        vehicleMotionY = 0;
+                    // Opóźniony start grawitacji - dajemy serwerowi 1s na ogarnięcie się po teleportacji
+                    if (gravityEnabled && !isInVehicle) {
+                        new Thread(() -> {
+                            try {
+                                Thread.sleep(1000); // Czekamy 1s zanim zaczniemy symulować fizykę
+                                if(client.isConnected()) {
+                                    startGravitySimulation();
+                                }
+                            } catch (InterruptedException e) { e.printStackTrace(); }
+                        }).start();
                     }
                 }
 
@@ -279,6 +541,7 @@ public class Bot extends Thread {
                 if (botHeadroll != null) botHeadroll.shutdownNow();
                 if (gravityExecutor != null) gravityExecutor.shutdownNow();
                 if (vehicleExecutor != null) vehicleExecutor.shutdownNow();
+                if (bowExecutor != null) bowExecutor.shutdownNow();
                 scriptExecutor.shutdownNow();
 
                 Main.removeBot(Bot.this);
@@ -293,7 +556,6 @@ public class Bot extends Thread {
 
         client.connect();
     }
-
 
     private void mountVehicle(int vehicleId) {
         this.isInVehicle = true;
@@ -315,7 +577,81 @@ public class Bot extends Thread {
 
         startVehicleSimulation();
     }
+    private void sendCaptchaToApi(String base64Image) {
+        try {
+            JsonObject json = new JsonObject();
+            json.addProperty("image", base64Image);
+            json.addProperty("mode", Main.captchaMode);
 
+            URL url = new URL("http://localhost:3001/api/solve-captcha");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = json.toString().getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) response.append(line);
+
+                JsonObject resJson = new JsonParser().parse(response.toString()).getAsJsonObject();
+                if (resJson.has("code")) {
+                    String code = resJson.get("code").getAsString();
+                    if (!code.equals("TIMEOUT") && !code.equals("CANCELLED")) {
+                        Log.info("Captcha solved (" + Main.captchaMode + "): " + code);
+                        listenerManager.handleEvent(ListenerType.CAPTCHA, this, "CAPTCHA_SOLVED", code);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.error("Captcha API error: " + e.getMessage());
+        }
+    }
+    public void startShooting() {
+        if (bowExecutor != null && !bowExecutor.isShutdown()) {
+            Log.info("Bot is already shooting!", nickname);
+            return;
+        }
+
+        bowExecutor = Executors.newSingleThreadScheduledExecutor();
+        Log.info("Auto-shooting enabled.", nickname);
+
+        bowExecutor.scheduleAtFixedRate(() -> {
+            if (!client.isConnected()) {
+                stopShooting();
+                return;
+            }
+
+            try {
+                client.send(new ServerboundUseItemPacket(Hand.MAIN_HAND));
+
+                Thread.sleep(250);
+
+                client.send(new ServerboundPlayerActionPacket(PlayerAction.RELEASE_USE_ITEM, new Position(0, 0, 0), Direction.DOWN));
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+        }, 0, 300, TimeUnit.MILLISECONDS);
+    }
+
+    public void stopShooting() {
+        if (bowExecutor != null && !bowExecutor.isShutdown()) {
+            bowExecutor.shutdownNow();
+            bowExecutor = null;
+            Log.info("Auto-shooting disabled.", nickname);
+
+            if (client.isConnected()) {
+                client.send(new ServerboundPlayerActionPacket(PlayerAction.RELEASE_USE_ITEM, new Position(0, 0, 0), Direction.DOWN));
+            }
+        }
+    }
     private void dismountVehicle() {
         this.isInVehicle = false;
         this.vehicleId = -1;
@@ -357,6 +693,7 @@ public class Bot extends Thread {
 
         }, 50, 50, TimeUnit.MILLISECONDS);
     }
+
 
     private void updateLandingHeight(int blockStateId, int blockY) {
         if (blockStateId == 0) return;
@@ -412,6 +749,9 @@ public class Bot extends Thread {
     }
 
     private void startGravitySimulation() {
+        if (!gravityEnabled) {
+            return;
+        }
         if (gravityExecutor != null && !gravityExecutor.isShutdown()) {
             return;
         }
@@ -459,6 +799,7 @@ public class Bot extends Thread {
 
         }, 50, 50, TimeUnit.MILLISECONDS);
     }
+
 
     public int getBotId() {
         return botId;
@@ -855,6 +1196,79 @@ public class Bot extends Thread {
                     Main.setAutoSwapState(true);
                     startSectorSwapping();
                     break;
+                case "guicaptcha":
+                    solveGuiCaptcha();
+                    break;
+                case "yaw":
+                    if (parts.length > 1) {
+                        float val = Float.parseFloat(parts[1]);
+                        this.lastYaw = val;
+                        client.send(new ServerboundMovePlayerRotPacket(onGround, lastYaw, lastPitch));
+                        Log.info("Yaw set to " + val, nickname);
+                    }
+                    break;
+
+                case "shoot":
+                    if (parts.length > 1) {
+                        String sub = parts[1].toLowerCase();
+                        if (sub.equals("on")) {
+                            startShooting();
+                        } else if (sub.equals("off")) {
+                            stopShooting();
+                        }
+                    }
+                    break;
+                case "pitch":
+                    if (parts.length > 1) {
+                        float val = Float.parseFloat(parts[1]);
+                        this.lastPitch = val;
+                        client.send(new ServerboundMovePlayerRotPacket(onGround, lastYaw, lastPitch));
+                        Log.info("Pitch set to " + val, nickname);
+                    }
+                    break;
+
+                case "look":
+                    if (parts.length > 2) {
+                        float newYaw = Float.parseFloat(parts[1]);
+                        float newPitch = Float.parseFloat(parts[2]);
+                        this.lastYaw = newYaw;
+                        this.lastPitch = newPitch;
+                        client.send(new ServerboundMovePlayerRotPacket(onGround, lastYaw, lastPitch));
+                        Log.info("Look set to Yaw: " + newYaw + " Pitch: " + newPitch, nickname);
+                    }
+                    break;
+                case "gravity":
+                    if (parts.length > 1) {
+                        String sub = parts[1].toLowerCase();
+                        if (sub.equals("off")) {
+                            this.gravityEnabled = false;
+
+                            if (gravityExecutor != null) {
+                                gravityExecutor.shutdownNow();
+                            }
+
+                            stopHeadroll();
+
+                            if (vehicleExecutor != null) {
+                                vehicleExecutor.shutdownNow();
+                            }
+
+                            client.send(new ServerboundMovePlayerPosRotPacket(true, lastX, lastY, lastZ, lastYaw, lastPitch));
+
+                            Log.info("Freeze mode enabled (All movement packets stopped).", nickname);
+
+                        } else if (sub.equals("on")) {
+                            this.gravityEnabled = true;
+                            Log.info("Gravity enabled.", nickname);
+
+                            if (!isInVehicle) {
+                                startGravitySimulation();
+                            } else {
+                                startVehicleSimulation();
+                            }
+                        }
+                    }
+                    break;
                 case "wait":
                     if (parts.length > 1) Thread.sleep(Long.parseLong(parts[1]));
                     break;
@@ -982,6 +1396,110 @@ public class Bot extends Thread {
     public ListenerManager getListenerManager() {
         return listenerManager;
     }
+    public void solveGuiCaptcha() {
+        if (currentWindowId == 0 || currentWindowItems.isEmpty()) {
+            Log.info("No GUI is currently open. Skipping [guicaptcha].", nickname);
+            return;
+        }
+
+        // 1. Obliczamy granicę między GUI a ekwipunkiem gracza.
+        // Ekwipunek gracza to zawsze ostatnie 36 slotów (27 plecak + 9 hotbar).
+        int maxSlot = 0;
+        for (int s : currentWindowItems.keySet()) {
+            if (s > maxSlot) maxSlot = s;
+        }
+        // Wszystko >= inventoryStartIndex to itemy u gracza, nie w skrzyni
+        int inventoryStartIndex = maxSlot - 35;
+        if (inventoryStartIndex < 0) inventoryStartIndex = maxSlot; // Zabezpieczenie
+
+        Log.info("Analyzing GUI items for captcha (Container size: " + inventoryStartIndex + ")...", nickname);
+
+        Map<String, Integer> nameCounts = new HashMap<>();
+        Map<String, Integer> nameToSlot = new HashMap<>();
+
+        for (Map.Entry<Integer, ItemStack> entry : currentWindowItems.entrySet()) {
+            int slot = entry.getKey();
+            ItemStack item = entry.getValue();
+
+            // 2. POMIJAMY EKWIPUNEK GRACZA - sprawdzamy tylko sloty kontenera
+            if (slot >= inventoryStartIndex) continue;
+
+            if (item == null) continue;
+
+            String displayName = getItemName(item).trim(); // Trim usuwa spacje z początku/końca
+
+            // Ignorujemy puste sloty/powietrze oraz itemy bez nazwy
+            if (item.getId() == 0 || displayName.isEmpty()) continue;
+
+            nameCounts.put(displayName, nameCounts.getOrDefault(displayName, 0) + 1);
+            nameToSlot.put(displayName, slot);
+        }
+
+        String uniqueName = null;
+
+        // Szukamy nazwy, która wystąpiła dokładnie 1 raz
+        for (Map.Entry<String, Integer> entry : nameCounts.entrySet()) {
+            if (entry.getValue() == 1) {
+                uniqueName = entry.getKey();
+                break;
+            }
+        }
+
+        if (uniqueName != null) {
+            int slotToClick = nameToSlot.get(uniqueName);
+            Log.info("Found unique item: '" + uniqueName + "' at slot " + slotToClick, nickname);
+            clickSlot(slotToClick, currentWindowId);
+        } else {
+            Log.warn("Could not find a unique item in the GUI.", nickname);
+            // Debug: wypisz co znalazł (skrócony)
+            for (String key : nameCounts.keySet()) {
+                Log.info("Item: '" + key + "' Count: " + nameCounts.get(key));
+            }
+        }
+    }
+
+    // Pomocnicza metoda do wyciągania CZYSTEJ nazwy z JSONa
+    private String getItemName(ItemStack item) {
+        if (item.getNbt() != null && item.getNbt().contains("display")) {
+            CompoundTag display = (CompoundTag) item.getNbt().get("display");
+            if (display.contains("Name")) {
+                String jsonName = display.get("Name").getValue().toString();
+                try {
+                    // Parsowanie JSONa, żeby wyciągnąć "text"
+                    // Obsługuje format: {"extra":[{"text":"Perelka"}],"text":""}
+                    com.google.gson.JsonElement parsed = new com.google.gson.JsonParser().parse(jsonName);
+
+                    if (parsed.isJsonObject()) {
+                        com.google.gson.JsonObject json = parsed.getAsJsonObject();
+                        StringBuilder sb = new StringBuilder();
+
+                        // Czasami nazwa jest bezpośrednio w "text"
+                        if (json.has("text")) {
+                            sb.append(json.get("text").getAsString());
+                        }
+
+                        // Czasami nazwa jest rozbita w "extra"
+                        if (json.has("extra")) {
+                            for (com.google.gson.JsonElement e : json.getAsJsonArray("extra")) {
+                                if (e.isJsonObject() && e.getAsJsonObject().has("text")) {
+                                    sb.append(e.getAsJsonObject().get("text").getAsString());
+                                }
+                            }
+                        }
+
+                        // Jeśli udało się coś wyciągnąć, zwracamy czysty tekst
+                        if (sb.length() > 0) return sb.toString();
+                    }
+                } catch (Exception e) {
+                    // Jeśli parsowanie się nie uda, trudno, zwracamy oryginał
+                }
+                return jsonName;
+            }
+        }
+        // Jeśli nie ma nazwy, używamy ID
+        return String.valueOf(item.getId());
+    }
+
     private int getIndentation(String line) {
         int indentation = 0;
         for (char c : line.toCharArray()) {
@@ -992,5 +1510,115 @@ public class Bot extends Thread {
             }
         }
         return indentation;
+    }
+
+    // --- KLASY WEWNĘTRZNE DO OBSŁUGI MAPY ---
+
+    private class MapHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            BufferedImage image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+
+            // 1. Sprawdź co bot trzyma w łapce
+            ItemStack heldItem = null;
+            if (currentSlot >= 0 && currentSlot < 9) {
+                heldItem = hotbarItems[currentSlot];
+            }
+
+            boolean hasMap = false;
+            int mapId = -1;
+
+            // 2. Sprawdź czy to mapa (ID itemu mapy to zazwyczaj filled_map, ID ~358 w starszych lub nazwa w nowszych)
+            // Tutaj sprawdzamy po prostu czy item ma tag NBT "map", który przechowuje ID mapy.
+            if (heldItem != null && heldItem.getNbt() != null) {
+                CompoundTag tag = (CompoundTag) heldItem.getNbt();
+                if (tag.contains("map")) {
+                    // Pobieramy ID mapy z NBT
+                    Object mapTagValue = tag.get("map").getValue();
+                    if (mapTagValue instanceof Number) {
+                        mapId = ((Number) mapTagValue).intValue();
+                        hasMap = true;
+                    }
+                }
+            }
+
+            // 3. Rysowanie
+            if (hasMap && mapCache.containsKey(mapId)) {
+                byte[] colors = mapCache.get(mapId);
+                for (int i = 0; i < colors.length; i++) {
+                    int x = i % 128;
+                    int y = i / 128;
+                    if (y >= 128) break;
+
+                    // Konwersja bajtu MC na RGB
+                    int rgb = MapPalette.getColor(colors[i] & 0xFF);
+                    image.setRGB(x, y, rgb);
+                }
+            } else {
+                // Rysuj placeholder jeśli nie ma mapy
+                java.awt.Graphics2D g = image.createGraphics();
+                g.setColor(Color.BLACK);
+                g.fillRect(0, 0, 128, 128);
+                g.setColor(Color.WHITE);
+                if (hasMap) {
+                    g.drawString("Czekam na dane...", 10, 64);
+                    g.drawString("Map ID: " + mapId, 10, 80);
+                } else {
+                    g.drawString("Brak mapy w rece", 10, 64);
+                }
+                g.dispose();
+            }
+
+            // 4. Wyślij obrazek jako odpowiedź
+            t.getResponseHeaders().set("Content-Type", "image/png");
+            // Odświeżaj stronę co 1 sekundę
+            t.getResponseHeaders().set("Refresh", "1");
+            t.sendResponseHeaders(200, 0);
+
+            OutputStream os = t.getResponseBody();
+            ImageIO.write(image, "png", os);
+            os.close();
+        }
+    }
+
+    // Uproszczona paleta kolorów Minecrafta
+    private static class MapPalette {
+        // Podstawowe kolory (bez odcieni) - Minecraft 1.12+ ma ich więcej, to jest baza
+        private static final int[] BASE_COLORS = {
+                0x000000, 0x7F9323, 0xF7E9A3, 0xA7A7A7, 0xFF0000, 0xA0A0FF, 0xA7A7A7, 0x007C00,
+                0xFFFFFF, 0xA4A8B8, 0x976D4D, 0x707070, 0x4040FF, 0x8F7748, 0xFFFCF5, 0xD87F33,
+                0xB24CD8, 0x6699D8, 0xE5E533, 0x7FCC19, 0xF27FA5, 0x4C4C4C, 0x999999, 0x4C7F99,
+                0x7F3FB2, 0x334CB2, 0x664C33, 0x667F33, 0x993333, 0x191919, 0xFAEE4D, 0x5CDBD5,
+                0x4A80FF, 0x00D93A, 0x815631, 0x700200, 0xD1B1A1, 0x95576C, 0x706C8A, 0xBA8524,
+                0x677535, 0xA04D4E, 0x392923, 0x876B62, 0x575C5C, 0x7A4958, 0x4C3E5C, 0x4C3223,
+                0x4C522A, 0x8E3C2E, 0x251610, 0xBD3031, 0x941C41
+                // ... lista jest dłuższa w nowszych wersjach, ale to wystarczy na start
+        };
+
+        public static int getColor(int byteValue) {
+            int baseColorIndex = byteValue >> 2;
+            int shade = byteValue & 3;
+
+            if (baseColorIndex >= BASE_COLORS.length) return 0x000000;
+
+            int color = BASE_COLORS[baseColorIndex];
+
+            // Proste cieniowanie (Minecraft używa mnożników: 180/255, 220/255, 255/255, 135/255)
+            int r = (color >> 16) & 0xFF;
+            int g = (color >> 8) & 0xFF;
+            int b = color & 0xFF;
+
+            int multiplier = 255;
+            if (shade == 0) multiplier = 180;
+            else if (shade == 1) multiplier = 220;
+            else if (shade == 2) multiplier = 255;
+            else if (shade == 3) multiplier = 135;
+
+            r = (r * multiplier) / 255;
+            g = (g * multiplier) / 255;
+            b = (b * multiplier) / 255;
+
+            return (r << 16) | (g << 8) | b;
+        }
     }
 }

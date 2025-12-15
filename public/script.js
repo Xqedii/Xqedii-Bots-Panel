@@ -30,6 +30,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let statsTabFirstVisit = true;
     let isAttackRunning = false;
 
+    const viaProxyVersions = [
+        "1.21.11", "1.21.9-1.21.10", "1.21.7-1.21.8", "1.21.6", "1.21.5", "1.21.4", "1.21.2-1.21.3", "1.21-1.21.1",
+        "1.20.5-1.20.6", "1.20.3-1.20.4", "1.20.2", "1.20-1.20.1",
+        "1.19.4", "1.19.3", "1.19.1-1.19.2", "1.19",
+        "1.18.2", "1.18-1.18.1",
+        "1.17.1", "1.17",
+        "1.16.4-1.16.5", "1.16.3", "1.16.2", "1.16.1", "1.16",
+        "1.15.2", "1.15.1", "1.15",
+        "1.14.4", "1.14.3", "1.14.2", "1.14.1", "1.14",
+        "1.13.2", "1.13.1", "1.13",
+        "1.12.2", "1.12",
+        "1.11.1-1.11.2", "1.11",
+        "1.10x",
+        "1.9.3-1.9.4", "1.9.2", "1.9.1", "1.9",
+        "1.8.x",
+        "1.7.6-1.7.10", "1.7.2-1.7.5"
+    ];
+    let viaProxyEnabled = localStorage.getItem('viaProxyEnabled') === 'true';
+    let viaProxySelectedVersion = localStorage.getItem('viaProxySelectedVersion') || viaProxyVersions[0];
+
     const saveFallCheckState = () => {
         const isActive = fallCheckToggle.classList.contains('active');
         localStorage.setItem('fallCheckActive', isActive);
@@ -77,16 +97,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const velocityModal = document.getElementById('velocity-modal');
     
     velocityModal.addEventListener('click', (e) => {
+        // Sprawdzamy czy kliknięto w tło
         if (e.target === velocityModal) {
             const spinner = document.getElementById('velocity-spinner');
             
+            // WARUNEK: Jeśli spinner jest widoczny (czyli trwa ładowanie/start), NIE zamykaj.
             if (spinner.style.display !== 'none') {
                 return;
             }
 
+            // Jeśli spinner jest ukryty (czyli to "Velocity Console"), zamykamy:
             velocityModal.classList.remove('modal-open');
             velocityModal.style.display = 'none';
 
+            // Reset przycisku Close -> Stop
             const stopBtn = document.getElementById('velocity-stop-btn');
             if (stopBtn && stopBtn.dataset.mode === 'close') {
                 setTimeout(() => {
@@ -100,20 +124,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (velocityStopBtn) {
         velocityStopBtn.addEventListener('click', () => {
+            // Jeśli jesteśmy w trybie podglądu (przycisk to "Close")
             if (velocityStopBtn.dataset.mode === 'close') {
                 const modal = document.getElementById('velocity-modal');
                 modal.classList.remove('modal-open');
                 modal.style.display = 'none';
                 
+                // Przywróć przycisk do stanu domyślnego po zamknięciu
                 setTimeout(() => {
                     velocityStopBtn.textContent = 'Stop';
                     velocityStopBtn.dataset.mode = 'stop';
                     velocityStopBtn.classList.add('btn-danger');
                     velocityStopBtn.classList.remove('btn-secondary');
                 }, 300);
-                return;
+                return; // Nie wysyłaj komendy stop
             }
 
+            // Standardowe zachowanie (Stop process)
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({ type: 'stop_attack' }));
             }
@@ -458,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const currentToasts = toastContainer.getElementsByClassName('toast');
         if (currentToasts.length >= 4) {
-            currentToasts[0].remove();
+            currentToasts[0].remove(); // Usuń najstarsze
         }
 
         const timeToShow = duration || notificationDuration;
@@ -466,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const toast = document.createElement('div');
         toast.className = 'toast';
         
+        // Nowa struktura HTML z Tytułem i Treścią
         toast.innerHTML = `
             <span class="toast-title">${title}</span>
             <span class="toast-message">${message}</span>
@@ -691,8 +719,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (data.type === 'status_update') {
-                isAttackRunning = data.isRunning;
+            if (data.type === 'captcha_request') {
+                // Otwórz modal z obrazkiem
+                const modal = document.getElementById('captcha-solve-modal');
+                const img = document.getElementById('captcha-img-display');
+                const input = document.getElementById('captcha-input-code');
+                
+                img.src = `data:image/png;base64,${data.image}`;
+                input.value = '';
+                
+                modal.classList.add('modal-open');
+                modal.style.display = 'flex';
+                input.focus();
+            } else if (data.type === 'captcha_solved') {
+                const modal = document.getElementById('captcha-solve-modal');
+                modal.classList.remove('modal-open');
+                modal.style.display = 'none';// ... (istniejące warunki) ...
+            } else if (data.type === 'viaproxy_popup') {
+                const modal = document.getElementById('viaproxy-console-modal');
+                const title = document.getElementById('viaproxy-modal-title');
+                const output = document.getElementById('viaproxy-console-output');
+                const spinner = document.getElementById('viaproxy-spinner');
+
+                if (data.status === 'open') {
+                    spinner.style.display = 'block';
+                    modal.classList.add('modal-open');
+                    modal.style.display = 'flex';
+                    output.innerHTML = '';
+                } else if (data.status === 'close') {
+                    modal.classList.remove('modal-open');
+                    modal.style.display = 'none';
+                }
+                if (data.title) title.textContent = data.title;
+                
+            } else if (data.type === 'viaproxy_log') {
+                const output = document.getElementById('viaproxy-console-output');
+                const line = document.createElement('div');
+                line.textContent = data.message;
+                line.style.borderBottom = "1px solid #333";
+                output.appendChild(line);
+                output.scrollTop = output.scrollHeight;
+            } else if  (data.type === 'status_update') {
+                isAttackRunning = data.isRunning; // <--- AKTUALIZACJA STANU
                 updateAttackButton(data.isRunning);
                 if (!data.isRunning) {
                     const velModal = document.getElementById('velocity-modal');
@@ -728,6 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         botsChart.update();
                     }
                 }
+                
             } else if (data.type === 'lists_updated') {
                 renderAll(); 
             } else if (data.type === 'killswitch_status_update') {
@@ -736,10 +805,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const modal = document.getElementById('velocity-modal');
                 const title = document.getElementById('velocity-modal-title');
                 const output = document.getElementById('velocity-console-output');
-                const spinner = document.getElementById('velocity-spinner');
+                const spinner = document.getElementById('velocity-spinner'); // <--- Pobierz element
                 
                 if (data.status === 'open') {
-                    spinner.style.display = 'block';
+                    spinner.style.display = 'block'; // <--- PRZYWRÓĆ SPINNER PRZY STARCIE
                     modal.classList.add('modal-open');
                     modal.style.display = 'flex';
                     output.innerHTML = '';
@@ -908,6 +977,8 @@ attackBtn.addEventListener('click', async () => {
                 ip: document.getElementById('ip').value,
                 amount: document.getElementById('amount').value,
                 version: document.getElementById('version').value, 
+                viaProxy: viaProxyEnabled,
+                viaProxyVersion: viaProxySelectedVersion,
                 delay: document.getElementById('delay').value,
                 nicksFile: document.getElementById('nicks-dropdown').value,
                 actionsFile: document.getElementById('actions-dropdown').value,
@@ -922,6 +993,7 @@ attackBtn.addEventListener('click', async () => {
                 return;
             }
 
+            // --- NOWY KOD: Obsługa Proxy i Connection Throttle dla Velocity ---
             if (params.version === '1.8-1.21.10') {
                 try {
                     const res = await fetch('/api/active-proxies');
@@ -932,6 +1004,7 @@ attackBtn.addEventListener('click', async () => {
                     const isLowDelay = delayVal < 4000;
 
                     if (isProxyOn) {
+                        // SCENARIUSZ 1: Proxy włączone (trzeba wyłączyć) + ew. ostrzeżenie o delayu
                         let bodyHtml = '<p>Velocity mode requires direct connection (localhost). Proxies must be disabled.</p>';
                         
                         if (isLowDelay) {
@@ -949,8 +1022,9 @@ attackBtn.addEventListener('click', async () => {
                             ]
                         });
 
-                        if (!userConfirmed) return;
+                        if (!userConfirmed) return; // Anuluj
 
+                        // Wyłączamy proxy
                         const headers = { 'Content-Type': 'application/json' };
                         if (proxies.SOCKS4) await fetch('/api/active-proxies', { method: 'POST', headers, body: JSON.stringify({ type: 'SOCKS4', name: proxies.SOCKS4 }) });
                         if (proxies.SOCKS5) await fetch('/api/active-proxies', { method: 'POST', headers, body: JSON.stringify({ type: 'SOCKS5', name: proxies.SOCKS5 }) });
@@ -958,6 +1032,7 @@ attackBtn.addEventListener('click', async () => {
                         logToConsole({type: 'info', message: 'Proxies automatically disabled for Velocity mode.'});
 
                     } else if (isLowDelay) {
+                        // SCENARIUSZ 2: Proxy wyłączone, ale delay jest niski (tylko ostrzeżenie o Throttle)
                         const userConfirmed = await showCustomModal({
                             title: 'Low Delay Warning',
                             bodyHTML: `<p>You are using Velocity mode (Direct Connection).</p>
@@ -976,6 +1051,7 @@ attackBtn.addEventListener('click', async () => {
                     console.error("Failed to check settings:", e);
                 }
             }
+            // ------------------------------------------------
 
             socket.send(JSON.stringify({ type: 'start_attack', params: params }));
         } else {
@@ -990,6 +1066,7 @@ attackBtn.addEventListener('click', async () => {
     function setupListEditor(type) {
         let currentEditingName = null;
         let currentEditingTimestamp = null;
+        
         const listEl = document.getElementById(`${type}-list`);
         const editorContainer = document.getElementById(`${type}-editor-container`);
         const nameInput = document.getElementById(`${type}-name`);
@@ -997,6 +1074,9 @@ attackBtn.addEventListener('click', async () => {
         const saveBtn = document.getElementById(`${type}-save`);
         const typeSelect = document.getElementById(`${type}-type`); 
         const contentLabel = document.getElementById(`${type}-content-label`);
+        
+        // Specyficzne dla Multi Actions
+        const triggerInput = document.getElementById('multi-actions-trigger');
 
         if (type === 'nicks' && typeSelect && contentLabel && contentTextarea) {
             const updateNickEditorUI = () => {
@@ -1005,7 +1085,6 @@ attackBtn.addEventListener('click', async () => {
                     contentTextarea.setAttribute('maxlength', '12');
                     contentTextarea.classList.add('textarea-as-input');
                     contentTextarea.rows = 1;
-                    
                     contentTextarea.value = contentTextarea.value.split('\n')[0].slice(0, 12);
                 } else {
                     contentLabel.textContent = 'Content (one nickname per line)';
@@ -1014,14 +1093,12 @@ attackBtn.addEventListener('click', async () => {
                     contentTextarea.rows = 10;
                 }
             };
-            
             typeSelect.addEventListener('change', updateNickEditorUI);
             contentTextarea.addEventListener('keydown', (e) => {
                 if (typeSelect.value === 'generator' && e.key === 'Enter') {
                     e.preventDefault();
                 }
             });
-
             contentTextarea.addEventListener('input', () => {
                 if (typeSelect.value === 'generator') {
                     contentTextarea.value = contentTextarea.value.replace(/[\r\n]/g, '');
@@ -1029,24 +1106,28 @@ attackBtn.addEventListener('click', async () => {
             });
         }
 
-
         const renderList = async () => {
             try {
-                const [itemsResponse, activeProxiesResponse] = await Promise.all([
-                    fetch(`/api/${type}`),
-                    type === 'proxy' ? fetch('/api/active-proxies') : Promise.resolve(null)
-                ]);
+                // Pobieramy listę plików ORAZ stan aktywności (jeśli dotyczy)
+                const promises = [fetch(`/api/${type}`)];
+                
+                if (type === 'proxy' || type === 'listeners' || type === 'multi-actions') {
+                    promises.push(fetch(type === 'proxy' ? '/api/active-proxies' : `/api/active-${type}`));
+                }
 
-                if (!itemsResponse.ok) throw new Error(`HTTP error! status: ${itemsResponse.status}`);
-                const items = await itemsResponse.json();
-                const activeProxies = type === 'proxy' ? await activeProxiesResponse.json() : {};
+                const responses = await Promise.all(promises);
+                if (!responses[0].ok) throw new Error(`HTTP error! status: ${responses[0].status}`);
+                
+                const items = await responses[0].json();
+                let activeData = null;
+                if (responses.length > 1) {
+                    activeData = await responses[1].json();
+                }
 
                 listEl.innerHTML = '';
                 if (items.length === 0) {
                     listEl.innerHTML = `<li>No saved lists.</li>`;
-                    if (type === 'nicks' || type === 'actions') {
-                       updateDropdowns(type, []);
-                    }
+                    if (type === 'nicks' || type === 'actions') updateDropdowns(type, []);
                     return;
                 }
 
@@ -1059,13 +1140,23 @@ attackBtn.addEventListener('click', async () => {
                     li.style.cursor = 'pointer';
 
                     let mainContentHTML = '';
+                    
                     if (type === 'proxy' && itemType) {
-                        const isActive = (itemType === 'SOCKS4' && activeProxies.SOCKS4 === itemName) || (itemType === 'SOCKS5' && activeProxies.SOCKS5 === itemName);
+                        const isActive = (itemType === 'SOCKS4' && activeData.SOCKS4 === itemName) || (itemType === 'SOCKS5' && activeData.SOCKS5 === itemName);
                         mainContentHTML = `
                             <div class="proxy-info">
                                 <div class="use-proxy-btn ${isActive ? 'active' : ''}"></div>
                                 <span>${itemName}</span>
                                 <span class="proxy-type-badge">${itemType}</span>
+                            </div>
+                        `;
+                    } else if (type === 'listeners' || type === 'multi-actions') {
+                        // Dla Listeners i Multi Actions używamy tablicy aktywnych nazw
+                        const isActive = Array.isArray(activeData) && activeData.includes(itemName);
+                        mainContentHTML = `
+                            <div class="item-name-wrapper">
+                                <div class="status-toggle-btn ${isActive ? 'active' : ''}" title="Toggle Active"></div>
+                                <span>${itemName}</span>
                             </div>
                         `;
                     } else if (type === 'nicks' && itemType) {
@@ -1091,6 +1182,7 @@ attackBtn.addEventListener('click', async () => {
                         const target = e.target;
                         const itemNameFromDataset = li.dataset.name;
 
+                        // Obsługa Proxy Toggle
                         if (target.closest('.use-proxy-btn')) {
                             try {
                                 await fetch('/api/active-proxies', {
@@ -1098,27 +1190,43 @@ attackBtn.addEventListener('click', async () => {
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ type: itemType, name: itemNameFromDataset })
                                 });
-                            } catch (error) {
-                                console.error("Failed to set active proxy:", error);
-                            }
+                                renderList();
+                            } catch (error) { console.error(error); }
                             return;
                         }
+
+                        // Obsługa Listeners/MultiActions Toggle
+                        if (target.closest('.status-toggle-btn')) {
+                            e.stopPropagation();
+                            const currentlyActive = target.closest('.status-toggle-btn').classList.contains('active');
+                            try {
+                                await fetch(`/api/active-${type}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ name: itemNameFromDataset, enabled: !currentlyActive })
+                                });
+                                renderList();
+                            } catch (error) { console.error(error); }
+                            return;
+                        }
+
                         if (target.closest('.rename-btn')) {
                             const newName = await customPrompt(`Enter a new name for "${itemNameFromDataset}":`, itemNameFromDataset);
                             if (newName && newName.trim() && newName !== itemNameFromDataset) {
                                 try {
                                     await fetch(`/api/${type}/${encodeURIComponent(itemNameFromDataset)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ newName: newName.trim() }) });
                                     if (currentEditingName === itemNameFromDataset) hideEditor();
-                                } catch (error) {
-                                    await customAlert(`Error: ${error.message}`);
-                                }
+                                    renderList();
+                                } catch (error) { await customAlert(`Error: ${error.message}`); }
                             }
                             return; 
                         }
+
                         if (target.closest('.delete-btn')) {
                             if (await customConfirm(`Delete <b>"${itemNameFromDataset}"</b>?`)) {
                                 await fetch(`/api/${type}/${encodeURIComponent(itemNameFromDataset)}`, { method: 'DELETE' });
                                 if (currentEditingName === itemNameFromDataset) hideEditor();
+                                renderList();
                             }
                             return; 
                         }
@@ -1135,7 +1243,7 @@ attackBtn.addEventListener('click', async () => {
                 }
             } catch (error) {
                 console.error(`Critical error in renderList for type ${type}:`, error);
-                listEl.innerHTML = `<li>Error loading list.</li>`
+                listEl.innerHTML = `<li>Error loading list.</li>`;
             }
         };
         
@@ -1149,12 +1257,15 @@ attackBtn.addEventListener('click', async () => {
                 typeSelect.value = 'list';
                 typeSelect.dispatchEvent(new Event('change'));
             }
+            if (type === 'multi-actions' && triggerInput) triggerInput.value = '';
+            
             currentEditingName = null;
             currentEditingTimestamp = null;
             nameInput.disabled = false;
             saveBtn.disabled = false;
             listEl.querySelectorAll('li.selected').forEach(li => li.classList.remove('selected'));
         };
+
         const editItem = async (name) => {
             try {
                 const response = await fetch(`/api/${type}/${encodeURIComponent(name)}`);
@@ -1172,6 +1283,9 @@ attackBtn.addEventListener('click', async () => {
                     typeSelect.value = data.nickType || 'list';
                     typeSelect.dispatchEvent(new Event('change'));
                 }
+                if (type === 'multi-actions' && triggerInput) {
+                    triggerInput.value = data.trigger || '';
+                }
 
                 saveBtn.disabled = false;
                 showEditor();
@@ -1180,11 +1294,29 @@ attackBtn.addEventListener('click', async () => {
             } catch (err) {
                 await customAlert("Could not load file. It might have been deleted.", "Loading Error");
                 hideEditor();
-                renderAll();
+                renderList();
             }
         };
-        document.getElementById(`${type}-add-new`).addEventListener('click', () => { hideEditor(); currentEditingName = null; currentEditingTimestamp = null; nameInput.value = ''; contentTextarea.value = ''; nameInput.disabled = false; saveBtn.disabled = false; if (typeSelect) { if (type === 'proxy') typeSelect.value = 'SOCKS5'; if (type === 'nicks') { typeSelect.value = 'list'; typeSelect.dispatchEvent(new Event('change')); }} showEditor(); nameInput.focus(); });
+
+        document.getElementById(`${type}-add-new`).addEventListener('click', () => { 
+            hideEditor(); 
+            currentEditingName = null; 
+            currentEditingTimestamp = null; 
+            nameInput.value = ''; 
+            contentTextarea.value = ''; 
+            nameInput.disabled = false; 
+            saveBtn.disabled = false; 
+            if (typeSelect) { 
+                if (type === 'proxy') typeSelect.value = 'SOCKS5'; 
+                if (type === 'nicks') { typeSelect.value = 'list'; typeSelect.dispatchEvent(new Event('change')); }
+            } 
+            if (type === 'multi-actions' && triggerInput) triggerInput.value = '';
+            showEditor(); 
+            nameInput.focus(); 
+        });
+        
         document.getElementById(`${type}-cancel`).addEventListener('click', hideEditor);
+        
         saveBtn.addEventListener('click', async () => { 
             const name = nameInput.value.trim(); 
             const content = contentTextarea.value; 
@@ -1197,6 +1329,7 @@ attackBtn.addEventListener('click', async () => {
             
             if (type === 'proxy' && typeSelect) payload.type = typeSelect.value;
             if (type === 'nicks' && typeSelect) payload.nickType = typeSelect.value;
+            if (type === 'multi-actions' && triggerInput) payload.trigger = triggerInput.value;
 
             try { 
                 const response = await fetch(`/api/${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
@@ -1209,6 +1342,7 @@ attackBtn.addEventListener('click', async () => {
                      throw new Error(errorText || 'Server responded with an error');
                 }
                 hideEditor(); 
+                renderList();
             } catch (error) { 
                 await customAlert(`Error saving file: ${error.message}`, 'Save Error'); 
             } finally { 
@@ -1224,6 +1358,7 @@ attackBtn.addEventListener('click', async () => {
     const listenersEditor = setupListEditor('listeners');
     const proxyEditor = setupListEditor('proxy');
     const asciiEditor = setupListEditor('ascii');
+    const multiActionsEditor = setupListEditor('multi-actions');
 
     async function renderAll() {
         await Promise.all([
@@ -1232,6 +1367,7 @@ attackBtn.addEventListener('click', async () => {
             listenersEditor.renderList(),
             proxyEditor.renderList(),
             asciiEditor.renderList(),
+            multiActionsEditor.renderList(),
             renderKillSwitchPanel()
         ]);
         
@@ -1252,6 +1388,105 @@ attackBtn.addEventListener('click', async () => {
         if (names.includes(selectedValue)) {
             dropdown.value = selectedValue;
         }
+    }
+    const setupToggleGroup = (onBtnId, offBtnId, initialState, callback) => {
+        const onBtn = document.getElementById(onBtnId);
+        const offBtn = document.getElementById(offBtnId);
+        
+        if (!onBtn || !offBtn) return;
+
+        const updateVisuals = (isActive) => {
+            if (isActive) {
+                onBtn.classList.add('active');
+                offBtn.classList.remove('active');
+            } else {
+                offBtn.classList.add('active');
+                onBtn.classList.remove('active');
+            }
+        };
+
+        // Ustaw stan początkowy
+        updateVisuals(initialState);
+
+        onBtn.addEventListener('click', () => {
+            updateVisuals(true);
+            callback(true);
+        });
+
+        offBtn.addEventListener('click', () => {
+            updateVisuals(false);
+            callback(false);
+        });
+    };
+
+    const advOpenBtn = document.getElementById('adv-settings-open-btn');
+    const advModal = document.getElementById('adv-settings-modal');
+    const advCloseBtn = document.getElementById('adv-settings-close-btn');
+    const vpSlider = document.getElementById('viaproxy-slider');
+    const vpText = document.getElementById('viaproxy-version-text');
+    const vpContainer = document.getElementById('viaproxy-slider-container');
+    const vpStopBtn = document.getElementById('viaproxy-stop-btn');
+
+    // Setup Slider
+    const maxIndex = viaProxyVersions.length - 1;
+    vpSlider.max = maxIndex;
+    
+    // Znajdź index aktualnie wybranej wersji
+    let currentIndex = viaProxyVersions.indexOf(viaProxySelectedVersion);
+    if (currentIndex === -1) currentIndex = 0; // Domyślnie najnowsza (index 0)
+    vpSlider.value = maxIndex - currentIndex;
+    vpText.textContent = viaProxyVersions[currentIndex];
+
+    const updateVpUI = (isEnabled) => {
+        if (isEnabled) {
+            vpContainer.style.opacity = '1';
+            vpContainer.style.pointerEvents = 'auto';
+        } else {
+            vpContainer.style.opacity = '0.5';
+            vpContainer.style.pointerEvents = 'none';
+        }
+    };
+    updateVpUI(viaProxyEnabled);
+
+    // Toggle
+    setupToggleGroup('viaproxy-on-btn', 'viaproxy-off-btn', viaProxyEnabled, (isEnabled) => {
+        viaProxyEnabled = isEnabled;
+        localStorage.setItem('viaProxyEnabled', isEnabled);
+        updateVpUI(isEnabled);
+    });
+
+    // Slider Event
+    vpSlider.addEventListener('input', (e) => {
+        const sliderValue = parseInt(e.target.value, 10);
+        
+        const actualIndex = maxIndex - sliderValue;
+        
+        viaProxySelectedVersion = viaProxyVersions[actualIndex];
+        vpText.textContent = viaProxySelectedVersion;
+        localStorage.setItem('viaProxySelectedVersion', viaProxySelectedVersion);
+    });
+
+    // Modal Events
+    advOpenBtn.addEventListener('click', () => {
+        settingsModal.classList.remove('modal-open');
+        settingsModal.style.display = 'none';
+        advModal.classList.add('modal-open');
+        advModal.style.display = 'flex';
+    });
+    advCloseBtn.addEventListener('click', () => {
+        advModal.classList.remove('modal-open');
+        advModal.style.display = 'none';
+    });
+    
+    // Stop button dla konsoli ViaProxy
+    if (vpStopBtn) {
+        vpStopBtn.addEventListener('click', () => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'stop_attack' }));
+            }
+            document.getElementById('viaproxy-console-modal').classList.remove('modal-open');
+            document.getElementById('viaproxy-console-modal').style.display = 'none';
+        });
     }
 
     const openModalBtn = document.getElementById('open-actions-modal-btn');
@@ -1282,6 +1517,156 @@ attackBtn.addEventListener('click', async () => {
             logToConsole({ type: 'error', message: 'No connection to the server.' });
         }
     }
+    function initCaptchaSystem() {
+        const btnManual = document.getElementById('btn-mode-manual');
+        const btnApi = document.getElementById('btn-mode-api');
+        
+        // API Modal elements
+        const apiModal = document.getElementById('api-key-modal');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiKeySave = document.getElementById('api-key-save');
+        const apiKeyCancel = document.getElementById('api-key-cancel');
+        const apiKeyError = document.getElementById('api-key-error');
+
+        // Captcha Solve Modal elements
+        const solveModal = document.getElementById('captcha-solve-modal');
+        const solveImg = document.getElementById('captcha-img-display');
+        const solveInput = document.getElementById('captcha-input-code');
+        const solveSubmit = document.getElementById('captcha-submit-btn');
+
+        let currentMode = localStorage.getItem('captchaMode') || 'manual';
+
+        const updateModeUI = () => {
+            if (currentMode === 'api') {
+                btnApi.classList.add('active');
+                btnManual.classList.remove('active');
+            } else {
+                btnManual.classList.add('active');
+                btnApi.classList.remove('active');
+            }
+        };
+        updateModeUI();
+
+        // Zmiana na Manual
+        btnManual.addEventListener('click', () => {
+            currentMode = 'manual';
+            localStorage.setItem('captchaMode', 'manual');
+            updateModeUI();
+        });
+
+        // Zmiana na API
+// Zmiana na API
+        const solveClose = document.getElementById('captcha-close-btn');
+        if (solveClose) { // Dodatkowo sprawdzamy czy przycisk istnieje
+            solveClose.addEventListener('click', async () => {
+                // Ukryj okno
+                solveModal.classList.remove('modal-open');
+                solveModal.style.display = 'none';
+                
+                // Wyczyść input
+                solveInput.value = '';
+
+                // Wyślij sygnał do serwera
+                try {
+                    await fetch('/api/captcha-answer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: 'CANCELLED' })
+                    });
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        }
+        btnApi.addEventListener('click', async () => {
+            console.log("Kliknięto przycisk API!"); // <--- To się powinno pojawić w konsoli F12
+
+            try {
+                const res = await fetch('/api/has-api-key');
+                if (!res.ok) {
+                    console.error("Błąd serwera:", res.status);
+                    return;
+                }
+                const data = await res.json();
+                console.log("Status klucza:", data);
+
+                if (data.hasKey) {
+                    currentMode = 'api';
+                    localStorage.setItem('captchaMode', 'api');
+                    updateModeUI();
+                } else {
+                    console.log("Brak klucza - otwieram modal");
+                    apiModal.classList.add('modal-open');
+                    apiModal.style.display = 'flex';
+                    apiKeyInput.focus();
+                }
+            } catch (e) { 
+                console.error("Błąd JS:", e); 
+            }
+        });
+
+        // Zapisywanie klucza API
+        apiKeySave.addEventListener('click', async () => {
+            const key = apiKeyInput.value.trim();
+            if (!key) return;
+
+            apiKeySave.textContent = 'Verifying...';
+            apiKeySave.disabled = true;
+            apiKeyError.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/save-api-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey: key })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    currentMode = 'api';
+                    localStorage.setItem('captchaMode', 'api');
+                    updateModeUI();
+                    apiModal.classList.remove('modal-open');
+                    apiModal.style.display = 'none';
+                } else {
+                    apiKeyError.textContent = 'Invalid API Key. Please check and try again.';
+                    apiKeyError.style.display = 'block';
+                }
+            } catch (e) {
+                apiKeyError.textContent = 'Error connecting to server.';
+                apiKeyError.style.display = 'block';
+            } finally {
+                apiKeySave.textContent = 'Verify & Save';
+                apiKeySave.disabled = false;
+            }
+        });
+
+        apiKeyCancel.addEventListener('click', () => {
+            apiModal.classList.remove('modal-open');
+            apiModal.style.display = 'none';
+        });
+
+        // Obsługa wysyłania rozwiązania manualnego
+        solveSubmit.addEventListener('click', async () => {
+            const code = solveInput.value.trim();
+            if (!code) return;
+
+            await fetch('/api/captcha-answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            
+            solveModal.classList.remove('modal-open');
+            solveModal.style.display = 'none';
+            solveInput.value = '';
+        });
+
+        // Obsługa Enter w inputach
+        solveInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') solveSubmit.click();
+        });
+    }
 
     function populateActionsModal() {
         actionsListContainer.innerHTML = '';
@@ -1302,15 +1687,18 @@ attackBtn.addEventListener('click', async () => {
             description.textContent = cmd.description;
 
             button.addEventListener('click', async () => {
+                // OBSŁUGA VELOCITY
                 if (cmd.command === 'Velocity') {
                     const velModal = document.getElementById('velocity-modal');
                     const stopBtn = document.getElementById('velocity-stop-btn');
                     const title = document.getElementById('velocity-modal-title');
                     const spinner = document.getElementById('velocity-spinner');
                     
+                    // UI: Zmień tytuł, ukryj spinner
                     title.textContent = 'Velocity Console';
-                    spinner.style.display = 'none';
+                    spinner.style.display = 'none'; // <--- Ukrywamy kółko
 
+                    // Przycisk: Tryb Close
                     stopBtn.textContent = 'Close';
                     stopBtn.dataset.mode = 'close';
                     stopBtn.classList.remove('btn-danger');
@@ -1324,9 +1712,11 @@ attackBtn.addEventListener('click', async () => {
                     return;
                 }
 
+                // ... RESZTA KODU BEZ ZMIAN (Chat, Autocrash itd.) ...
                 let fullCommand = null;
 
                 if (cmd.command === '!autocrash') {
+                    // (Zachowaj istniejący kod dla autocrash)
                     if (autoCrashInterval) {
                         clearInterval(autoCrashInterval);
                         autoCrashInterval = null;
@@ -1347,10 +1737,12 @@ attackBtn.addEventListener('click', async () => {
                 }
 
                 if (cmd.command === 'CHAT_MESSAGE') {
+                   // (Zachowaj istniejący kod)
                     const userInput = await customPrompt(cmd.inputPrompt, '', 'Send a message');
                     if (userInput === null || userInput.trim() === '') return;
                     fullCommand = userInput;
                 } else if (cmd.command === '!ascii') {
+                    // (Zachowaj istniejący kod)
                     try {
                         const response = await fetch('/api/ascii');
                         if (!response.ok) throw new Error('Could not fetch ASCII art list.');
@@ -1393,8 +1785,9 @@ attackBtn.addEventListener('click', async () => {
         });
     }
 
+    // WAŻNE: Odśwież listę przy każdym otwarciu
     openModalBtn.addEventListener('click', () => { 
-        populateActionsModal();
+        populateActionsModal(); // <--- Dodane wywołanie tutaj
         actionsModal.classList.add('modal-open');
         actionsModal.style.display = 'flex'; 
     });
@@ -1421,66 +1814,44 @@ attackBtn.addEventListener('click', async () => {
     const settingsModalCloseBtn = document.getElementById('settings-modal-close-btn');
     const darkModeToggle = document.getElementById('dark-mode-toggle');
 
-    const setupToggleGroup = (onBtnId, offBtnId, initialState, callback) => {
-        const onBtn = document.getElementById(onBtnId);
-        const offBtn = document.getElementById(offBtnId);
-        
-        if (!onBtn || !offBtn) return;
-
-        const updateVisuals = (isActive) => {
-            if (isActive) {
-                onBtn.classList.add('active');
-                offBtn.classList.remove('active');
-            } else {
-                offBtn.classList.add('active');
-                onBtn.classList.remove('active');
-            }
-        };
-
-        updateVisuals(initialState);
-
-        onBtn.addEventListener('click', () => {
-            updateVisuals(true);
-            callback(true);
-        });
-
-        offBtn.addEventListener('click', () => {
-            updateVisuals(false);
-            callback(false);
-        });
-    };
-
     const setTheme = (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
         updateChartTheme();
     };
 
+    // 1. Konfiguracja Dark Mode
     const savedTheme = localStorage.getItem('theme') || 'light';
     const isDarkInitial = savedTheme === 'dark';
     
+    // Ustawienie początkowe motywu
     setTheme(savedTheme);
 
     setupToggleGroup('dm-on-btn', 'dm-off-btn', isDarkInitial, (isDark) => {
         setTheme(isDark ? 'dark' : 'light');
     });
 
+    // 2. Konfiguracja Powiadomień
     setupToggleGroup('notif-on-btn', 'notif-off-btn', notificationsEnabled, (isEnabled) => {
         notificationsEnabled = isEnabled;
         localStorage.setItem('notificationsEnabled', notificationsEnabled);
     });
     let serverCheckMethod = localStorage.getItem('serverCheckMethod') || 'mcsrv';
 
+    // Funkcja ustawiająca wizualnie odpowiedni przycisk
     const setCheckMethodUI = (val) => {
+        // Odznaczamy wszystkie (dla pewności, choć radio robi to samo)
         const radio = document.querySelector(`input[name="server-check"][value="${val}"]`);
         if (radio) radio.checked = true;
     };
     
+    // Ustaw stan początkowy
     setCheckMethodUI(serverCheckMethod);
 
+    // Nasłuchiwanie zmian na każdym przycisku radio
     document.querySelectorAll('input[name="server-check"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            serverCheckMethod = e.target.value;
+            serverCheckMethod = e.target.value; // 'off', 'mcsrv' lub 'manual'
             localStorage.setItem('serverCheckMethod', serverCheckMethod);
         });
     });
@@ -1509,6 +1880,7 @@ attackBtn.addEventListener('click', async () => {
     const reconnectSlider = document.getElementById('reconnect-slider');
     const reconnectValueText = document.getElementById('reconnect-value-text');
 
+    // Funkcja aktualizująca UI
     const updateReconnectUI = (isEnabled) => {
         if (isEnabled) {
             reconnectSliderContainer.classList.add('active');
@@ -1517,16 +1889,19 @@ attackBtn.addEventListener('click', async () => {
         }
     };
 
+    // Inicjalizacja slidera
     reconnectSlider.value = autoReconnectDelay;
     reconnectValueText.textContent = `${autoReconnectDelay}ms`;
     updateReconnectUI(autoReconnectEnabled);
 
+    // Setup Toggle (ON/OFF)
     setupToggleGroup('reconnect-on-btn', 'reconnect-off-btn', autoReconnectEnabled, (isEnabled) => {
         autoReconnectEnabled = isEnabled;
         localStorage.setItem('autoReconnectEnabled', isEnabled);
         updateReconnectUI(isEnabled);
     });
 
+    // Slider Event
     reconnectSlider.addEventListener('input', (e) => {
         autoReconnectDelay = e.target.value;
         reconnectValueText.textContent = `${autoReconnectDelay}ms`;
@@ -1537,6 +1912,7 @@ attackBtn.addEventListener('click', async () => {
     setTheme(savedTheme);
     initializeChart();
     initializeStatsCharts();
+    initCaptchaSystem();
 
     function initializeStatsCharts() {
         const textCenterPlugin = {

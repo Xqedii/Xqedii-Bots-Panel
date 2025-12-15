@@ -102,6 +102,11 @@ Teleports the bot relative to its current position (adds X/Y/Z to current coords
 Syntax: [move <x> <y> <z>]
 Example: [move 0 5 0] (Teleports 5 blocks up)
 
+Gravity
+Toggle bot gravity
+Syntax: [gravity on/off]
+Example: [gravity off]
+
 Wait
 Pauses the execution of the script for a specific amount of milliseconds.
 Syntax: [wait <milliseconds>]

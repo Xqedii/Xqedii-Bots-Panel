@@ -38,9 +38,12 @@ public class ListenerManager {
         }
 
         for (File file : files) {
-            loadListenersFromFile(file);
+            String fileName = file.getName().replace(".txt", "");
+            if (Main.activeListenerFiles.isEmpty() || Main.activeListenerFiles.contains(fileName)) {
+                loadListenersFromFile(file);
+            }
         }
-        Log.imp("Loaded listeners from " + files.length + " files.");
+        Log.imp("Loaded listeners from " + files.length + " files (Active filter applied).");
     }
 
     private void loadListenersFromFile(File file) {
@@ -87,27 +90,34 @@ public class ListenerManager {
         }
     }
 
-    public void handleEvent(ListenerType type, Bot bot, String message) {
+    // W pliku ListenerManager.java
+
+    public void handleEvent(ListenerType type, Bot bot, String message, String captchaCode) {
         List<ListenerRule> rules = listeners.get(type);
-        if (rules == null || rules.isEmpty()) {
-            return;
-        }
+        if (rules == null || rules.isEmpty()) return;
 
         String code = extractCode(message);
         PlayerInfo playerInfo = extractPlayerInfo(message);
 
         for (ListenerRule rule : rules) {
-            if (rule.isConditionMet(message, playerInfo)) {
+            if (rule.isConditionMet(bot, message, playerInfo)) {
                 for (String actionTemplate : rule.getActions()) {
-
-                    if (actionTemplate.contains("{code}") && (code == null || code.isEmpty())) {
+                    if (actionTemplate.contains("{code}") && (code == null || code.isEmpty()) && captchaCode == null) {
                         continue;
                     }
 
                     String finalAction = actionTemplate.replace("{message}", message);
-                    if (code != null) {
+                    finalAction = finalAction.replace("{x}", String.format("%.2f", bot.getX()));
+                    finalAction = finalAction.replace("{y}", String.format("%.2f", bot.getY()));
+                    finalAction = finalAction.replace("{z}", String.format("%.2f", bot.getZ()));
+
+                    if (captchaCode != null) {
+                        finalAction = finalAction.replace("{code}", captchaCode);
+                    } else if (code != null) {
+                        // To obsługuje stary sposób (kod wyciągnięty regexem z czatu), jeśli captchaCode jest nullem
                         finalAction = finalAction.replace("{code}", code);
                     }
+
                     if (playerInfo.isPlayerMsg()) {
                         finalAction = finalAction.replace("{player}", playerInfo.getPlayerName());
                         finalAction = finalAction.replace("{playermsg}", playerInfo.getPlayerMessage());
@@ -120,17 +130,18 @@ public class ListenerManager {
                                 bot.processCommand(commandToExecute);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
-                                Log.warn("Listener action was interrupted for bot " + bot.getNickname());
                             }
                         });
                     } catch (Exception e) {
-                        Log.error("Error executing listener action for bot " + bot.getNickname(), e.getMessage());
+                        Log.error("Error executing listener action: " + e.getMessage());
                     }
                 }
             }
         }
     }
-
+    public void handleEvent(ListenerType type, Bot bot, String message) {
+        handleEvent(type, bot, message, null);
+    }
     private PlayerInfo extractPlayerInfo(String message) {
         Matcher playerMatcher = PLAYER_CHAT_PATTERN.matcher(message);
         if (playerMatcher.matches()) {

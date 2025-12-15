@@ -1,0 +1,18 @@
+[04:27:54] [main/INFO] (ViaProxy) Initializing ViaProxy CLI v3.4.7 (git-ViaProxy-3.4.7:bc9341f) (Injected using Launcher Agent)...
+[04:27:54] [main/INFO] (ViaProxy) Using java version: Java HotSpot(TM) 64-Bit Server VM 21.0.6 (Oracle Corporation) on Windows 11
+[04:27:54] [main/INFO] (ViaProxy) Available memory (bytes): 8568963072
+[04:27:54] [main/INFO] (ViaProxy) Working directory: C:\Users\xqedi\Documents\Workspace\XqBots — From xqedii.dev\viaproxy
+[04:27:55] [Via-Mappingloader-1/INFO] (ViaVersion) Loading block connection mappings ...
+[04:27:56] [main/INFO] (ViaBackwards) Loading translations...
+[04:27:56] [main/INFO] (ViaBackwards) Registering protocols...
+[04:27:56] [main/INFO] (ViaRewind) Registering protocols...
+[04:27:57] [main/INFO] (ViaBedrock) Started resource pack HTTP server on http://127.0.0.1:51999/
+[04:27:57] [main/INFO] (ViaVersion) ViaVersion detected lowest supported version by the proxy: 1.7.2-1.7.5 (4)
+[04:27:57] [main/INFO] (ViaVersion) Highest supported version by the proxy: 1.21.11 (774)
+[04:27:58] [main/INFO] (ViaProxy) ViaProxy started successfully!
+[04:27:58] [main/INFO] (ViaProxy) Starting proxy server
+[04:27:58] [main/INFO] (ViaProxy) Binding proxy server to 0.0.0.0:25568
+[04:27:58] [Via Async Scheduler 0/INFO] (ViaVersion) Finished mapping loading, shutting down loader executor.
+[04:28:00] [Netty NIO Server Child IO #1/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51925 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:28:00] [Netty NIO Server Child IO #1/INFO] (ViaProxy) [AUTH] (127.0.0.1:51925 | XqBot_000) Filling player data
+[04:28:00] [Netty NIO Client IO #1/INFO] (ViaProxy) [SESSION] (127.0.0.1:51925 | XqBot_000) Connected successfully! Switching to PLAY state

@@ -56,6 +56,10 @@
                             <span class="material-symbols-outlined">explosion</span>
                             <p>Kill Switch</p>
                         </button>
+                        <button type="button" data-tab="multi-actions">
+                            <span class="material-symbols-outlined">checklist_rtl</span>
+                            <p>Multi Actions</p>
+                        </button>
                     </div>
 
                     <div class="menu-bottom">
@@ -155,6 +159,40 @@
                         <div style="margin-top: 16px;">
                             <button id="actions-save" class="btn btn-primary" style="grid-column: auto;">Save</button>
                             <button id="actions-cancel" class="btn btn-secondary" style="grid-column: auto;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="multi-actions" class="tab-content">
+            <div class="content-wrapper">
+                <h2>Multi Actions Manager</h2>
+                <p class="page-description">Create actions distributed among bots. Activate the switch to enable listening for the trigger.</p>
+                <button id="multi-actions-add-new" class="btn btn-primary" style="grid-column: auto; margin-bottom: 24px;">Add new multi-action</button>
+                <div class="list-editor-container">
+                    <div class="item-list-container">
+                        <h3>Existing lists</h3>
+                        <ul id="multi-actions-list" class="item-list"></ul>
+                    </div>
+                    <div id="multi-actions-editor-container" class="item-editor-container hidden">
+                        <h3>Editor</h3>
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="multi-actions-name">Multi Action name</label>
+                            <input type="text" id="multi-actions-name" placeholder="Enter name">
+                        </div>
+                        <!-- BOX DO TRIGGERA -->
+                        <div class="form-group full-width" style="margin-bottom: 16px;">
+                            <label for="multi-actions-trigger" style="font-weight: bold;">Trigger Text (Starts action when detected)</label>
+                            <input type="text" id="multi-actions-trigger" placeholder="e.g. start_raid">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="multi-actions-content">Content (e.g. [send "Msg"])</label>
+                            <textarea id="multi-actions-content" class="editor-textarea"></textarea>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <button id="multi-actions-save" class="btn btn-primary" style="grid-column: auto;">Save</button>
+                            <button id="multi-actions-cancel" class="btn btn-secondary" style="grid-column: auto;">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -301,19 +339,29 @@
                 </div>
             </div>
         </div>
-        
+            
         <div id="captcha" class="tab-content">
-             <div class="content-wrapper">
-                <h2>Captcha</h2>
-                <p class="page-description">Manage captcha-related settings.</p>
-                 <div class="list-editor-container">
+            <div class="content-wrapper">
+                <h2>Captcha Settings</h2>
+                <p class="page-description">Configure automatic (API) or manual captcha solving.</p>
+                <div class="list-editor-container">
                     <div class="item-list-container" style="flex: none; width: 100%;">
-                        <h3>Available Options</h3>
+                        <h3>Configuration</h3>
                         <ul id="captcha-list" class="item-list">
-                           <li id="fall-check-item" style="border: 1px solid var(--border-color); cursor: default;">
+                            <li style="border: 1px solid var(--border-color); cursor: default; margin-top: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <span>Map Captcha Method</span>
+                                    <div class="toggle-group">
+                                        <!-- DODANO type="button" -->
+                                        <button type="button" class="toggle-btn active" id="btn-mode-manual">Manual</button>
+                                        <button type="button" class="toggle-btn" id="btn-mode-api">API (AI)</button>
+                                    </div>
+                                </div>
+                            </li>
+                            <li id="fall-check-item" style="border: 1px solid var(--border-color); cursor: default;">
                                 <div class="captcha-info">
-                                     <div class="captcha-toggle-btn" id="fall-check-toggle"></div>
-                                     <span>Fall Check</span>
+                                    <div class="captcha-toggle-btn" id="fall-check-toggle"></div>
+                                    <span>Fall Check</span>
                                 </div>
                             </li>
                         </ul>
@@ -414,6 +462,10 @@
                         <input type="range" id="reconnect-slider" min="0" max="15000" step="100" value="5000" class="styled-slider">
                     </div>
                 </div>
+                <div class="setting-item">
+                    <p>Advanced Settings</p>
+                    <button class="btn btn-secondary" id="adv-settings-open-btn" style="padding: 5px 15px; font-size: 0.9rem;">Open</button>
+                </div>
             </div>
         </div>
     </div>
@@ -445,6 +497,80 @@
 
     </div>
   </div>
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header"><h2>OpenAI API Required</h2></div>
+            <div style="padding: 10px 0;">
+                <p style="margin-bottom: 10px;">API mode requires a valid OpenAI API Key.</p>
+                <input type="password" id="api-key-input" placeholder="sk-..." class="form-control" style="width: 100%;" autocomplete="new-password" name="api_key_field_ignore">
+                <p id="api-key-error" style="color: var(--error-color); font-size: 0.9em; margin-top: 5px; display: none;"></p>
+            </div>
+            <div class="modal-footer" style="padding-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="api-key-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="api-key-save" class="btn btn-primary">Verify & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Captcha Modal -->
+    <div id="captcha-solve-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <div class="modal-header">
+                <h2 style="margin: 0 auto;">Solve Captcha</h2>
+                <button id="captcha-close-btn" class="modal-close-btn">×</button>
+            </div>
+            <div style="padding: 15px 0;">
+                <img id="captcha-img-display" src="" style="width: 200px; height: 200px; image-rendering: pixelated; margin-bottom: 15px; border: 2px solid #555;">
+                <input type="text" id="captcha-input-code" placeholder="Enter code..." style="width: 100%; text-align: center; font-size: 1rem;" autocomplete="off">
+            </div>
+            <button id="captcha-submit-btn" class="btn btn-primary" style="width: 100%;">Send Answer</button>
+        </div>
+    </div>
+<!-- Modal Ustawień Zaawansowanych (ViaProxy) -->
+  <div id="adv-settings-modal" class="modal-overlay">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h2>Advanced Settings</h2>
+              <button id="adv-settings-close-btn" class="modal-close-btn">×</button>
+          </div>
+          <div class="settings-content">
+              <!-- ViaProxy Toggle -->
+              <div class="setting-item">
+                  <p>ViaProxy</p>
+                  <div class="toggle-group">
+                      <button class="toggle-btn" id="viaproxy-on-btn">On</button>
+                      <button class="toggle-btn" id="viaproxy-off-btn">Off</button>
+                  </div>
+              </div>
+              
+              <!-- ViaProxy Version Slider -->
+              <div id="viaproxy-slider-container" style="width: 100%; display: flex; flex-direction: column; gap: 10px; opacity: 0.5; pointer-events: none; transition: opacity 0.3s; margin-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-color-desc);">
+                      <span>Target Version</span>
+                      <span id="viaproxy-version-text" style="font-weight: bold; color: var(--text-color);">1.21.11</span>
+                  </div>
+                  <!-- Max ustawimy dynamicznie w JS na podstawie długości tablicy wersji -->
+                  <input type="range" id="viaproxy-slider" min="0" max="0" step="1" value="0" class="styled-slider">
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- Modal Konsoli ViaProxy (taki sam styl jak Velocity) -->
+  <div id="viaproxy-console-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="viaproxy-modal-title">Starting ViaProxy...</h2>
+            <div id="viaproxy-spinner" class="spinner-loader"></div>
+        </div>
+        <div id="viaproxy-console-output" class="console-output"></div>
+        <div class="modal-footer">
+            <button id="viaproxy-stop-btn" class="btn btn-danger">Stop</button>
+        </div>
+    </div>
+  </div>
+  
   <div id="toast-container" class="toast-container"></div>
   <script src="script.js"></script>
 </body>

@@ -27,7 +27,7 @@ sample-players-in-ping = false
 enable-player-address-logging = true
 
 [servers]
-xqbots = "132.145.254.137:25565"
+xqbots = "162.141.71.102:25565"
 
 try = [
     "xqbots"

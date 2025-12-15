@@ -1,0 +1,93 @@
+[04:13:04] [main/INFO] (ViaProxy) Initializing ViaProxy CLI v3.4.7 (git-ViaProxy-3.4.7:bc9341f) (Injected using Launcher Agent)...
+[04:13:04] [main/INFO] (ViaProxy) Using java version: Java HotSpot(TM) 64-Bit Server VM 21.0.6 (Oracle Corporation) on Windows 11
+[04:13:04] [main/INFO] (ViaProxy) Available memory (bytes): 8568963072
+[04:13:04] [main/INFO] (ViaProxy) Working directory: C:\Users\xqedi\Documents\Workspace\XqBots — From xqedii.dev\viaproxy
+[04:13:05] [Via-Mappingloader-1/INFO] (ViaVersion) Loading block connection mappings ...
+[04:13:06] [main/INFO] (ViaBackwards) Loading translations...
+[04:13:06] [main/INFO] (ViaBackwards) Registering protocols...
+[04:13:06] [main/INFO] (ViaRewind) Registering protocols...
+[04:13:07] [main/INFO] (ViaBedrock) Started resource pack HTTP server on http://127.0.0.1:52806/
+[04:13:07] [main/INFO] (ViaVersion) ViaVersion detected lowest supported version by the proxy: 1.7.2-1.7.5 (4)
+[04:13:07] [main/INFO] (ViaVersion) Highest supported version by the proxy: 1.21.11 (774)
+[04:13:08] [main/INFO] (ViaProxy) ViaProxy started successfully!
+[04:13:08] [main/INFO] (ViaProxy) Starting proxy server
+[04:13:08] [main/INFO] (ViaProxy) Binding proxy server to 0.0.0.0:25568
+[04:13:09] [Via Async Scheduler 0/INFO] (ViaVersion) Finished mapping loading, shutting down loader executor.
+[04:13:10] [Netty NIO Server Child IO #1/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51978 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #1/INFO] (ViaProxy) [AUTH] (127.0.0.1:51978 | XqBot_000) Filling player data
+[04:13:10] [Netty NIO Server Child IO #2/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51980 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #2/INFO] (ViaProxy) [AUTH] (127.0.0.1:51980 | XqBot_001) Filling player data
+[04:13:10] [Netty NIO Server Child IO #3/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51982 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #3/INFO] (ViaProxy) [AUTH] (127.0.0.1:51982 | XqBot_002) Filling player data
+[04:13:10] [Netty NIO Client IO #1/INFO] (ViaProxy) [SESSION] (127.0.0.1:51978 | XqBot_000) Connected successfully! Switching to PLAY state
+[04:13:10] [Netty NIO Client IO #2/INFO] (ViaProxy) [SESSION] (127.0.0.1:51980 | XqBot_001) Connected successfully! Switching to PLAY state
+[04:13:10] [Netty NIO Client IO #3/INFO] (ViaProxy) [SESSION] (127.0.0.1:51982 | XqBot_002) Connected successfully! Switching to PLAY state
+[04:13:10] [Netty NIO Server Child IO #4/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51985 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #4/INFO] (ViaProxy) [AUTH] (127.0.0.1:51985 | XqBot_003) Filling player data
+[04:13:10] [Netty NIO Server Child IO #5/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51987 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #5/INFO] (ViaProxy) [AUTH] (127.0.0.1:51987 | XqBot_004) Filling player data
+[04:13:10] [Netty NIO Server Child IO #6/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51989 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #6/INFO] (ViaProxy) [AUTH] (127.0.0.1:51989 | XqBot_005) Filling player data
+[04:13:10] [Netty NIO Client IO #4/INFO] (ViaProxy) [SESSION] (127.0.0.1:51985 | XqBot_003) Connected successfully! Switching to PLAY state
+[04:13:10] [Netty NIO Client IO #5/INFO] (ViaProxy) [SESSION] (127.0.0.1:51987 | XqBot_004) Connected successfully! Switching to PLAY state
+[04:13:10] [Netty NIO Server Child IO #7/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51991 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:10] [Netty NIO Server Child IO #7/INFO] (ViaProxy) [AUTH] (127.0.0.1:51991 | XqBot_006) Filling player data
+[04:13:11] [Netty NIO Client IO #6/INFO] (ViaProxy) [SESSION] (127.0.0.1:51989 | XqBot_005) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Client IO #7/INFO] (ViaProxy) [SESSION] (127.0.0.1:51991 | XqBot_006) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Server Child IO #8/INFO] (ViaProxy) [CONNECT] (127.0.0.1:51993 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #8/INFO] (ViaProxy) [AUTH] (127.0.0.1:51993 | XqBot_007) Filling player data
+[04:13:11] [Netty NIO Server Child IO #9/INFO] (ViaProxy) [CONNECT] (127.0.0.1:57710 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #9/INFO] (ViaProxy) [AUTH] (127.0.0.1:57710 | XqBot_008) Filling player data
+[04:13:11] [Netty NIO Client IO #8/INFO] (ViaProxy) [SESSION] (127.0.0.1:51993 | XqBot_007) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Server Child IO #10/INFO] (ViaProxy) [CONNECT] (127.0.0.1:57712 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #10/INFO] (ViaProxy) [AUTH] (127.0.0.1:57712 | XqBot_009) Filling player data
+[04:13:11] [Netty NIO Client IO #9/INFO] (ViaProxy) [SESSION] (127.0.0.1:57710 | XqBot_008) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Client IO #10/INFO] (ViaProxy) [SESSION] (127.0.0.1:57712 | XqBot_009) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Server Child IO #11/INFO] (ViaProxy) [CONNECT] (127.0.0.1:62200 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #11/INFO] (ViaProxy) [AUTH] (127.0.0.1:62200 | XqBot_010) Filling player data
+[04:13:11] [Netty NIO Client IO #11/INFO] (ViaProxy) [SESSION] (127.0.0.1:62200 | XqBot_010) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Server Child IO #12/INFO] (ViaProxy) [CONNECT] (127.0.0.1:54444 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #12/INFO] (ViaProxy) [AUTH] (127.0.0.1:54444 | XqBot_011) Filling player data
+[04:13:11] [Netty NIO Server Child IO #13/INFO] (ViaProxy) [CONNECT] (127.0.0.1:57807 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #13/INFO] (ViaProxy) [AUTH] (127.0.0.1:57807 | XqBot_012) Filling player data
+[04:13:11] [Netty NIO Server Child IO #14/INFO] (ViaProxy) [CONNECT] (127.0.0.1:55243 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:11] [Netty NIO Server Child IO #14/INFO] (ViaProxy) [AUTH] (127.0.0.1:55243 | XqBot_013) Filling player data
+[04:13:11] [Netty NIO Client IO #12/INFO] (ViaProxy) [SESSION] (127.0.0.1:54444 | XqBot_011) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Client IO #13/INFO] (ViaProxy) [SESSION] (127.0.0.1:57807 | XqBot_012) Connected successfully! Switching to PLAY state
+[04:13:11] [Netty NIO Client IO #14/INFO] (ViaProxy) [SESSION] (127.0.0.1:55243 | XqBot_013) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Server Child IO #15/INFO] (ViaProxy) [CONNECT] (127.0.0.1:64870 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #15/INFO] (ViaProxy) [AUTH] (127.0.0.1:64870 | XqBot_014) Filling player data
+[04:13:12] [Netty NIO Server Child IO #16/INFO] (ViaProxy) [CONNECT] (127.0.0.1:64872 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #16/INFO] (ViaProxy) [AUTH] (127.0.0.1:64872 | XqBot_015) Filling player data
+[04:13:12] [Netty NIO Client IO #15/INFO] (ViaProxy) [SESSION] (127.0.0.1:64870 | XqBot_014) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Server Child IO #17/INFO] (ViaProxy) [CONNECT] (127.0.0.1:64874 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #17/INFO] (ViaProxy) [AUTH] (127.0.0.1:64874 | XqBot_016) Filling player data
+[04:13:12] [Netty NIO Client IO #16/INFO] (ViaProxy) [SESSION] (127.0.0.1:64872 | XqBot_015) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Client IO #17/INFO] (ViaProxy) [SESSION] (127.0.0.1:64874 | XqBot_016) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Server Child IO #18/INFO] (ViaProxy) [CONNECT] (127.0.0.1:64658 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #18/INFO] (ViaProxy) [AUTH] (127.0.0.1:64658 | XqBot_017) Filling player data
+[04:13:12] [Netty NIO Client IO #18/INFO] (ViaProxy) [SESSION] (127.0.0.1:64658 | XqBot_017) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Server Child IO #19/INFO] (ViaProxy) [CONNECT] (127.0.0.1:53070 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #19/INFO] (ViaProxy) [AUTH] (127.0.0.1:53070 | XqBot_018) Filling player data
+[04:13:12] [Netty NIO Server Child IO #20/INFO] (ViaProxy) [CONNECT] (127.0.0.1:53072 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Client IO #19/INFO] (ViaProxy) [SESSION] (127.0.0.1:53070 | XqBot_018) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Server Child IO #20/INFO] (ViaProxy) [AUTH] (127.0.0.1:53072 | XqBot_019) Filling player data
+[04:13:12] [Netty NIO Server Child IO #21/INFO] (ViaProxy) [CONNECT] (127.0.0.1:59719 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #21/INFO] (ViaProxy) [AUTH] (127.0.0.1:59719 | XqBot_020) Filling player data
+[04:13:12] [Netty NIO Client IO #20/INFO] (ViaProxy) [SESSION] (127.0.0.1:53072 | XqBot_019) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Client IO #21/INFO] (ViaProxy) [SESSION] (127.0.0.1:59719 | XqBot_020) Connected successfully! Switching to PLAY state
+[04:13:12] [Netty NIO Server Child IO #22/INFO] (ViaProxy) [CONNECT] (127.0.0.1:59731 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #22/INFO] (ViaProxy) [AUTH] (127.0.0.1:59731 | XqBot_021) Filling player data
+[04:13:12] [Netty NIO Server Child IO #23/INFO] (ViaProxy) [CONNECT] (127.0.0.1:59739 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:12] [Netty NIO Server Child IO #23/INFO] (ViaProxy) [AUTH] (127.0.0.1:59739 | XqBot_022) Filling player data
+[04:13:13] [Netty NIO Server Child IO #24/INFO] (ViaProxy) [CONNECT] (127.0.0.1:59741 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:13] [Netty NIO Server Child IO #24/INFO] (ViaProxy) [AUTH] (127.0.0.1:59741 | XqBot_023) Filling player data
+[04:13:13] [Netty NIO Client IO #22/INFO] (ViaProxy) [SESSION] (127.0.0.1:59731 | XqBot_021) Connected successfully! Switching to PLAY state
+[04:13:13] [Netty NIO Client IO #23/INFO] (ViaProxy) [SESSION] (127.0.0.1:59739 | XqBot_022) Connected successfully! Switching to PLAY state
+[04:13:13] [Netty NIO Server Child IO #25/INFO] (ViaProxy) [CONNECT] (127.0.0.1:59743 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:13] [Netty NIO Server Child IO #25/INFO] (ViaProxy) [AUTH] (127.0.0.1:59743 | XqBot_024) Filling player data
+[04:13:13] [Netty NIO Client IO #24/INFO] (ViaProxy) [SESSION] (127.0.0.1:59741 | XqBot_023) Connected successfully! Switching to PLAY state
+[04:13:13] [Netty NIO Client IO #25/INFO] (ViaProxy) [SESSION] (127.0.0.1:59743 | XqBot_024) Connected successfully! Switching to PLAY state
+[04:13:22] [Netty NIO Server Child IO #26/INFO] (ViaProxy) [CONNECT] (127.0.0.1:54692 | null) [1.18.2 <-> 1.21.4] Connecting to cf.anarchia.gg.:25561
+[04:13:22] [Netty NIO Server Child IO #26/INFO] (ViaProxy) [AUTH] (127.0.0.1:54692 | Leawaim) Filling player data
+[04:13:22] [Netty NIO Client IO #26/INFO] (ViaProxy) [SESSION] (127.0.0.1:54692 | Leawaim) Connected successfully! Switching to PLAY state

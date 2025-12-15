@@ -1,12 +1,11 @@
 package dev.xqedii;
 
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundChatPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.title.ClientboundSetActionBarTextPacket;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.*;
 import com.github.steveice10.packetlib.packet.Packet;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.TranslatableComponent;
 
 public class MainListener implements SessionListener {
 
@@ -18,52 +17,62 @@ public class MainListener implements SessionListener {
 
     @Override
     public void packetReceived(Session session, Packet packet) {
-        if(packet instanceof ClientboundChatPacket) {
-            Component message = ((ClientboundChatPacket) packet).getMessage();
-            String textToLog = "";
+        Component message = null;
+        String packetType = "";
 
-            if (message instanceof TextComponent) {
-                TextComponent msg = (TextComponent) message;
-                textToLog = Utils.getFullText(msg, Main.coloredChat);
-            } else if (message instanceof TranslatableComponent) {
-                TranslatableComponent msg = (TranslatableComponent) message;
-                textToLog = "[T] " + Utils.translate(msg);
-            }
+        // 1. Sprawdzamy zwykły ChatPacket (tu wpada czat graczy ORAZ wiadomości systemowe w starszych libach)
+        if (packet instanceof ClientboundChatPacket) {
+            message = ((ClientboundChatPacket) packet).getMessage();
+            packetType = "ChatPacket";
+        }
+        // 2. Sprawdzamy ActionBar (komunikaty nad paskiem życia)
+        else if (packet instanceof ClientboundSetActionBarTextPacket) {
+            message = ((ClientboundSetActionBarTextPacket) packet).getText();
+            packetType = "ActionBarPacket";
+        }
 
-            if(!textToLog.isEmpty() && !textToLog.equals(lastLoggedMessage)) {
-                Log.chat(textToLog);
-                lastLoggedMessage = textToLog;
+        // Jeśli znaleziono wiadomość w pakiecie
+        if (message != null) {
+            try {
+                String textForCheck = Utils.getFullText(message, false);
+
+                String textToLog = Utils.getFullText(message, Main.coloredChat);
+
+                if (!textToLog.isEmpty()) {
+                    if (!textToLog.equals(lastLoggedMessage)) {
+                        Log.chat(textToLog);
+                        lastLoggedMessage = textToLog;
+                    }
+
+                    for (MultiAction action : Main.loadedMultiActions) {
+                        if (textForCheck.contains(action.getTrigger())) {
+                            Log.info("[DEBUG] !!! TRIGGER DETECTED: " + action.getTrigger());
+                            Main.executeMultiAction(action);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.error("Error processing packet " + packetType + ": " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
 
     @Override
-    public void packetSending(PacketSendingEvent event) {
-
-    }
+    public void packetSending(PacketSendingEvent event) { }
 
     @Override
-    public void packetSent(Session session, Packet packet) {
-
-    }
+    public void packetSent(Session session, Packet packet) { }
 
     @Override
-    public void packetError(PacketErrorEvent event) {
-
-    }
+    public void packetError(PacketErrorEvent event) { }
 
     @Override
-    public void connected(ConnectedEvent event) {
-
-    }
+    public void connected(ConnectedEvent event) { }
 
     @Override
-    public void disconnecting(DisconnectingEvent event) {
-
-    }
+    public void disconnecting(DisconnectingEvent event) { }
 
     @Override
-    public void disconnected(DisconnectedEvent event) {
-
-    }
+    public void disconnected(DisconnectedEvent event) { }
 }

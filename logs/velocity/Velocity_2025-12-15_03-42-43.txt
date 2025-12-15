@@ -1,0 +1,233 @@
+2025-12-15T03:41:11.442354600Z main WARN Advanced terminal features are not available in this environment
+[04:41:11 INFO]: Booting up Velocity 3.4.0-SNAPSHOT (git-a046f700-b557)...
+[04:41:12 INFO]: Loading localizations...
+[04:41:12 INFO]: Connections will use NIO channels, Java compression, Java ciphers
+[04:41:12 WARN]: The proxy is running in offline mode! This is a security risk and you will NOT receive any support!
+[04:41:12 WARN]: Player info forwarding is disabled! All players will appear to be connecting from the proxy and will have offline-mode UUIDs.
+[04:41:12 INFO]: Loading plugins...
+[04:41:12 INFO]: Loaded plugin viaversion 5.6.0 by _MylesC, creeper123123321, Gerrygames, kennytv, Matsv, EnZaXD, RK_01
+[04:41:12 INFO]: Loaded plugin viabackwards 5.6.0 by Matsv, kennytv, Gerrygames, creeper123123321, ForceUpdate1, EnZaXD
+[04:41:12 INFO]: Loaded 3 plugins
+[04:41:13 INFO] [viaversion]: Loading block connection mappings ...
+[04:41:13 INFO] [viaversion]: Replacing channel initializers; you can safely ignore the following two warnings.
+[04:41:13 WARN]: The server channel initializer has been replaced by java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+[04:41:13 WARN]: The backend channel initializer has been replaced by java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+[04:41:13 INFO] [viabackwards]: Loading translations...
+[04:41:13 INFO] [viabackwards]: Registering protocols...
+[04:41:14 INFO] [viaversion]: ViaVersion detected lowest supported version by the proxy: 1.7.2-1.7.5 (4)
+[04:41:14 INFO] [viaversion]: Highest supported version by the proxy: 1.21.9-1.21.10 (773)
+[04:41:14 INFO] [viaversion]: Finished mapping loading, shutting down loader executor.
+[04:41:14 INFO]: Listening on /[0:0:0:0:0:0:0:0]:25590
+[04:41:14 INFO]: Done (2,99s)!
+[04:41:35 WARN]: Exception caught while decoding frame for /162.141.71.70:25565
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:41:35 INFO]: [connected player] XqBot_000 (/127.0.0.1:51346) has connected
+[04:41:35 INFO]: [server connection] XqBot_000 -> xqbots has connected
+[04:41:55 WARN]: Exception caught while decoding frame for /162.141.71.70:25565
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:41:55 ERROR]: [server connection] XqBot_000 -> xqbots: exception encountered in com.velocitypowered.proxy.connection.backend.LoginSessionHandler@12f16975
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:41:55 INFO]: [server connection] XqBot_000 -> xqbots has disconnected
+[04:41:55 ERROR]: [connected player] XqBot_000 (/127.0.0.1:51346): unable to connect to server xqbots
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:41:55 INFO]: [connected player] XqBot_000 (/127.0.0.1:51346) has disconnected: Nie uda�o si� po��czy� ci� z serwerem xqbots. Spr�buj ponownie p�niej.
+[04:41:59 INFO]: [connected player] XqBot_000 (/127.0.0.1:55631) has connected
+[04:41:59 INFO]: [server connection] XqBot_000 -> xqbots has connected
+[04:42:18 WARN]: Exception caught while decoding frame for /162.141.71.70:25565
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:42:18 ERROR]: [server connection] XqBot_000 -> xqbots: exception encountered in com.velocitypowered.proxy.connection.backend.LoginSessionHandler@7e13e17f
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:42:18 INFO]: [server connection] XqBot_000 -> xqbots has disconnected
+[04:42:18 ERROR]: [connected player] XqBot_000 (/127.0.0.1:55631): unable to connect to server xqbots
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:42:18 INFO]: [connected player] XqBot_000 (/127.0.0.1:55631) has disconnected: Nie uda�o si� po��czy� ci� z serwerem xqbots. Spr�buj ponownie p�niej.
+[04:42:23 INFO]: [connected player] XqBot_000 (/127.0.0.1:63230) has connected
+[04:42:23 INFO]: [server connection] XqBot_000 -> xqbots has connected
+[04:42:42 WARN]: Exception caught while decoding frame for /162.141.71.70:25565
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:42:42 ERROR]: [server connection] XqBot_000 -> xqbots: exception encountered in com.velocitypowered.proxy.connection.backend.LoginSessionHandler@5331d5b3
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:42:42 INFO]: [server connection] XqBot_000 -> xqbots has disconnected
+[04:42:42 ERROR]: [connected player] XqBot_000 (/127.0.0.1:63230): unable to connect to server xqbots
+java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.SocketChannelImpl.throwConnectionReset(SocketChannelImpl.java:401) ~[?:?]
+	at java.base/sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:434) ~[?:?]
+	at io.netty.buffer.AdaptivePoolingAllocator$AdaptiveByteBuf.setBytes(AdaptivePoolingAllocator.java:1824) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.buffer.AbstractByteBuf.writeBytes(AbstractByteBuf.java:1139) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.socket.nio.NioSocketChannel.doReadBytes(NioSocketChannel.java:350) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:153) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.handle(AbstractNioChannel.java:445) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler$DefaultNioRegistration.handle(NioIoHandler.java:388) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKey(NioIoHandler.java:596) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeysOptimized(NioIoHandler.java:571) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.processSelectedKeys(NioIoHandler.java:512) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.nio.NioIoHandler.run(NioIoHandler.java:484) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.runIo(SingleThreadIoEventLoop.java:225) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.channel.SingleThreadIoEventLoop.run(SingleThreadIoEventLoop.java:196) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:1193) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[server.jar:3.4.0-SNAPSHOT (git-a046f700-b557)]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+[04:42:42 INFO]: [connected player] XqBot_000 (/127.0.0.1:63230) has disconnected: Nie uda�o si� po��czy� ci� z serwerem xqbots. Spr�buj ponownie p�niej.

@@ -1,0 +1,6 @@
+[CHAT listener]:
+    [log {message}
+    [if {message} contains "/register"]:
+        [cmd /register XqBots!@3 XqBots!@3 {code}]
+    [if {message} contains "Zaloguj"]:
+        [cmd /login XqBots!@3]

@@ -269,7 +269,7 @@ h3 { font-size: 1.2rem; margin-bottom: 16px; color: var(--text-color-muted); tra
     min-width: 100px;
 }
 label { margin-bottom: 8px; font-size: 0.9rem; font-weight: 500; color: var(--text-color-desc); transition: color 0.3s ease;}
-input[type="text"], input[type="number"], select, .editor-textarea { 
+input[type="text"], input[type="number"], input[type="password"], select, .editor-textarea { 
     background-color: var(--input-bg); 
     border: 1px solid var(--border-color); 
     color: var(--text-color-muted); 
@@ -479,6 +479,7 @@ html[data-theme='dark'] .console-output .log-info { color: #89b4fa; font-weight:
 
 
 
+/* Layout elementu ustawień */
 .setting-item {
     display: flex;
     justify-content: space-between;
@@ -609,7 +610,8 @@ html[data-theme='dark'] .console-output .log-info { color: #89b4fa; font-weight:
     margin: 0;
 }
 
-.custom-modal-body input[type="text"] {
+.custom-modal-body input[type="text"],
+.custom-modal-body input[type="password"] {
     width: 100%;
     margin-top: 10px;
 }
@@ -895,6 +897,7 @@ input:focus {
     margin-bottom: 8px;
 }
 
+/* --- Velocity Modal Styles --- */
 
 #velocity-modal .modal-content {
     max-width: 800px;
@@ -902,7 +905,7 @@ input:focus {
     display: flex;
     flex-direction: column;
     max-height: 90vh;
-    height: 50vh;
+    height: 50vh; /* Tutaj zmieniasz wysokość całego okna */
 }
 
 #velocity-modal .modal-header {
@@ -916,11 +919,12 @@ input:focus {
     margin: 0;
 }
 
+/* Nadpisujemy standardowe style konsoli tylko dla tego modala */
 #velocity-modal #velocity-console-output {
-    flex: 1;
-    min-height: 0;
+    flex: 1;            /* Rozciąga konsolę, aby wypełniła wolne miejsce */
+    min-height: 0;      /* Zapobiega wyjściu poza kontener flex */
     margin-bottom: 15px;
-    max-height: none;
+    max-height: none;   /* Usuwa limit 400px ze zwykłej konsoli */
 }
 
 #velocity-modal .modal-footer {
@@ -930,6 +934,9 @@ input:focus {
     transition: border-color 0.3s ease;
 }
 
+
+
+/* Toast Notifications */
 .toast-container {
     position: fixed;
     bottom: 30px;
@@ -1052,6 +1059,7 @@ input:focus {
 
 
 
+/* Slider Styling */
 .styled-slider {
     -webkit-appearance: none;
     width: 100%;
@@ -1068,7 +1076,7 @@ input:focus {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--text-color);
+    background: var(--text-color); /* Fioletowy kolor z motywu */
     cursor: pointer;
     border: 2px solid var(--theme-bg);
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -1089,6 +1097,7 @@ input:focus {
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
+/* Stan aktywny dla kontenera slidera */
 #reconnect-slider-container.active {
     opacity: 1 !important;
     pointer-events: auto !important;
@@ -1097,4 +1106,84 @@ input:focus {
     outline: none !important;
     box-shadow: none !important;
     outline-offset: 0 !important;
+}
+
+
+
+.status-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--text-color-desc);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 12px;
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.status-toggle-btn:hover {
+    border-color: var(--text-color);
+}
+
+.status-toggle-btn.active {
+    background-color: var(--IMP-color);
+    border-color: var(--IMP-color);
+}
+
+.status-toggle-btn.active::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.item-name-wrapper {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- ViaProxy Modal Styles (Kopia styli Velocity) --- */
+#viaproxy-console-modal .modal-content {
+    max-width: 800px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    height: 50vh; /* Stała wysokość */
+}
+
+#viaproxy-console-modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
+}
+
+#viaproxy-console-modal .modal-header h2 {
+    margin: 0;
+}
+
+#viaproxy-console-modal #viaproxy-console-output {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 15px;
+    max-height: none; /* Resetuje standardowy limit */
+    overflow-y: auto; /* Scrollowanie */
+    background-color: var(--web-bg); /* Opcjonalnie ciemniejsze tło */
+    font-family: monospace;
+}
+
+#viaproxy-console-modal .modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding-top: 15px;
+    text-align: right;
+    transition: border-color 0.3s ease;
 }
