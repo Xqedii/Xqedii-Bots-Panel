@@ -1,6 +1,6 @@
 # Xqedii Bots
 [![Release](https://img.shields.io/badge/release-1.0-blue)](https://github.com/Xqedii/Xqedii-Bots-Panel) 
-[![Release](https://img.shields.io/badge/Panel-Docs-yellow)](https://github.com/Xqedii/Xqedii-Bots-Panel/blob/main/docs.txt) 
+[![Release](https://img.shields.io/badge/Panel-Docs-yellow)](https://github.com/Xqedii/Xqedii-Bots-Panel/blob/main/DOCS.md) 
 [![Discord](https://img.shields.io/badge/Discord-Join-7289DA?logo=discord&logoColor=white)](https://discord.com/invite/6JQfeQEB4W)
 
 **Web Panel for security testing and server optimization**
@@ -43,7 +43,7 @@ This category allows you to create actions that bots will perform upon joining t
 ```
 
 > [!NOTE]
-> Actions are written in a simple, custom language designed specifically for this panel. A description of the language, all possible bot actions, and example scripts can be found in the docs.txt file.
+> Actions are written in a simple, custom language designed specifically for this panel. A description of the language, all possible bot actions, and example scripts can be found in the DOCS.md file.
 
 ## Nicknames Manager
 
@@ -81,7 +81,7 @@ Or, if you want something to happen when a captcha code appears on the map, you 
 ```
 
 > [!NOTE]
-> A full description of all listeners, including available types and example scripts, can be found in `docs.txt`
+> A full description of all listeners, including available types and example scripts, can be found in `DOCS.md`
 
 ## Multi Actions Manager
 
